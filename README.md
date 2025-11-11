@@ -1,36 +1,55 @@
-# RWE Mounjaro Study Analysis Dashboard
+# 📊 Data Analysis Platform with AR Visualization
 
-A comprehensive data analysis tool with interactive visualizations and AI-powered chatbot for exploring the Real World Evidence (RWE) Mounjaro Study dataset.
+A comprehensive, general-purpose data analysis platform featuring interactive visualizations, AR (Augmented Reality) 3D data views, AI-powered insights, and accessibility controls. Analyze any CSV dataset with advanced statistical tools and immersive visualizations.
 
 ## 🌟 Features
 
-### 📊 **Comprehensive Data Analysis**
+### 📊 **Universal Data Analysis**
 
+- Works with any CSV dataset - healthcare, business, scientific, financial, and more
+- Automatic detection of numeric and categorical columns
 - Statistical summaries and descriptive analytics
-- Treatment effectiveness analysis (Mounjaro vs Lifestyle interventions)
-- Demographics analysis by age, gender, and country
-- Comorbidities impact assessment
-- Patient clustering and segmentation
+- Correlation analysis and pattern detection
+- Data clustering and segmentation
 - Statistical hypothesis testing
+- Custom dataset upload and switching
 
 ### 📈 **Interactive Visualizations**
 
-- Overview dashboards with key metrics
-- Treatment effectiveness comparisons
-- Weight loss distribution analysis
-- Demographic breakdowns
-- Correlation heatmaps
-- Time series analysis of patient enrollment
-- Adverse events analysis
-- Patient journey visualization
+- Dynamic dashboards with key metrics
+- Multiple chart types (scatter, bar, line, heatmaps)
+- Distribution analysis for any variables
+- Correlation matrices and pattern detection
+- Time series visualization
+- Demographic and categorical breakdowns
+- Customizable views for different data types
 
-### 🤖 **AI-Powered Chatbot**
+### 🌐 **AR (Augmented Reality) Data Viewer**
 
-- Natural language queries about the dataset
+- **3D Data Cube**: Immersive 3D visualization of three-dimensional relationships
+- **Patient Journey Map**: Track data points through multi-dimensional space
+- **Outcome Constellation**: Interactive star field showing data clusters and patterns
+- Full-screen mode for optimal viewing
+- Interactive controls for rotation, zoom, and exploration
+- Real-time statistics and insights
+
+### 🤖 **AI-Powered Assistant**
+
+- Natural language queries about any dataset
 - Context-aware responses using Google Gemini AI
-- Suggested questions for data exploration
+- Automatic analysis of your data structure
+- Suggested questions tailored to your dataset
 - Conversation history tracking
-- Statistical insights on demand
+- Statistical insights and explanations on demand
+
+### ♿ **Accessibility Features**
+
+- High contrast mode for visual accessibility
+- Font size adjustments
+- Reduced motion options
+- Screen reader optimization
+- Keyboard navigation support
+- WCAG 2.1 compliant design
 
 ### 🔍 **Dataset Explorer**
 
@@ -142,9 +161,19 @@ Choose from various interactive charts:
 - Download filtered datasets as CSV
 - Check data quality and missing values
 
-## 📊 Dataset Information
+## � Upload Any Dataset
 
-The RWE Mounjaro Study dataset contains 1,000 patient records with the following key variables:
+This platform is designed to work with **any CSV dataset**. Simply upload your file and the system will automatically:
+
+- Detect column types (numeric, categorical, dates)
+- Generate appropriate visualizations
+- Provide statistical summaries
+- Create AR views of your data relationships
+- Enable AI-powered analysis
+
+## 📊 Sample Dataset
+
+Included is a sample healthcare dataset (RWE Mounjaro Study) with 1,000 patient records demonstrating the platform's capabilities:
 
 ### Patient Demographics
 

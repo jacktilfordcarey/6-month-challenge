@@ -1,8 +1,8 @@
 """
-Main Streamlit Dashboard Application for Mounjaro Study Analysis
+General Data Analysis Platform with AR Visualization
 
-This is the main application that combines data analysis, visualizations, and AI chatbot
-into an interactive dashboard for exploring the RWE Mounjaro Study dataset.
+An interactive platform for analyzing any dataset with advanced visualizations,
+AR viewing modes, and AI-powered insights. Upload your own data or use the sample dataset.
 """
 
 import streamlit as st
@@ -19,8 +19,8 @@ from chatbot import GeminiChatbot
 
 # Page configuration
 st.set_page_config(
-    page_title="RWE Mounjaro Study Analysis Dashboard",
-    page_icon="�",
+    page_title="Data Analysis Platform with AR Visualization",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -352,11 +352,11 @@ st.markdown(f"""
 
 @st.cache_data
 def load_data():
-    """Load and cache the dataset."""
+    """Load and cache the default sample dataset."""
     csv_path = "rwe_mounjaro_study_1000.csv"
     if not os.path.exists(csv_path):
-        st.error(f"Dataset file '{csv_path}' not found. Please ensure the file is in the current directory.")
-        st.stop()
+        st.warning(f"Sample dataset file '{csv_path}' not found. Please upload your own CSV file.")
+        return None
     return csv_path
 
 @st.cache_resource
@@ -379,12 +379,13 @@ def main():
     """Main application function."""
     
     # Custom Dataset Upload in sidebar
-    with st.sidebar.expander("📂 Custom Dataset Upload", expanded=False):
-        st.markdown("**Upload Your Own CSV File:**")
+    with st.sidebar.expander("📂 Dataset Upload", expanded=True):
+        st.markdown("**Upload Your CSV Dataset:**")
+        st.caption("Upload any CSV file for analysis and visualization")
         uploaded_file = st.file_uploader(
             "Choose a CSV file",
             type=['csv'],
-            help="Upload your own dataset to analyze. Must be in CSV format."
+            help="Upload any dataset in CSV format for analysis with AR visualization and AI insights."
         )
         
         if uploaded_file is not None:
@@ -404,10 +405,10 @@ def main():
         
         # Show current dataset info
         if 'use_custom_dataset' in st.session_state and st.session_state.use_custom_dataset:
-            st.markdown("**Current Dataset:**")
+            st.markdown("**Active Dataset:**")
             st.markdown(f"📁 {st.session_state.get('custom_csv_name', 'Custom Upload')}")
             
-            if st.button("🔙 Return to Default Dataset", key="use_default"):
+            if st.button("🔙 Return to Sample Dataset", key="use_default"):
                 st.session_state.use_custom_dataset = False
                 if 'custom_csv_path' in st.session_state:
                     try:
@@ -416,8 +417,8 @@ def main():
                         pass
                 st.rerun()
         else:
-            st.markdown("**Current Dataset:**")
-            st.markdown("📁 RWE Mounjaro Study (Default)")
+            st.markdown("**Active Dataset:**")
+            st.markdown("📁 Sample Dataset (Healthcare Study)")
     
     # Accessibility controls in sidebar
     with st.sidebar.expander("🔧 Accessibility Settings"):
@@ -472,25 +473,29 @@ def main():
         st.markdown(accessibility_css, unsafe_allow_html=True)
     
     # Header with semantic markup
-    st.markdown('<h1 class="main-header" id="main-content" role="banner">RWE Mounjaro Study Analysis Dashboard</h1>', 
+    st.markdown('<h1 class="main-header" id="main-content" role="banner">📊 Data Analysis Platform with AR Visualization</h1>', 
                 unsafe_allow_html=True)
     
     # Initialize components - check for custom dataset
     if 'use_custom_dataset' in st.session_state and st.session_state.use_custom_dataset:
         if 'custom_csv_path' in st.session_state:
             csv_path = st.session_state.custom_csv_path
-            st.info(f"📊 Analyzing custom dataset: {st.session_state.get('custom_csv_name', 'Custom Upload')}")
+            st.info(f"📊 Analyzing: {st.session_state.get('custom_csv_name', 'Custom Dataset')}")
         else:
             csv_path = load_data()
     else:
         csv_path = load_data()
+    
+    if csv_path is None:
+        st.error("❌ No dataset loaded. Please upload a CSV file to begin analysis.")
+        st.stop()
     
     try:
         analyzer = initialize_analyzer(csv_path)
         visualizer = initialize_visualizer(analyzer)
     except Exception as e:
         st.error(f"❌ Error loading dataset: {str(e)}")
-        st.warning("Please ensure your CSV file has the required columns or return to the default dataset.")
+        st.warning("Please check your CSV file format and try again, or upload a different dataset.")
         st.stop()
     
     # Sidebar Navigation
@@ -499,12 +504,12 @@ def main():
     
     # Page selection with cleaner labels and AR option
     pages = {
-        "Study Overview": "overview",
-        "Data Analysis": "analysis", 
-        "Visualizations": "visualizations",
-        "AR Data Viewer": "ar_viewer",
-        "AI Assistant": "chatbot",
-        "Dataset Explorer": "explorer"
+        "📊 Data Overview": "overview",
+        "📈 Statistical Analysis": "analysis", 
+        "📉 Visualizations": "visualizations",
+        "🌐 AR Data Viewer": "ar_viewer",
+        "🤖 AI Assistant": "chatbot",
+        "🔍 Dataset Explorer": "explorer"
     }
     
     selected_page = st.sidebar.selectbox(
@@ -521,16 +526,34 @@ def main():
     st.sidebar.markdown("## Key Metrics")
     basic_stats = analyzer.get_basic_statistics()
     
-    # Display metrics in a cleaner format
-    st.sidebar.metric("Total Patients", basic_stats['dataset_overview']['total_patients'])
-    st.sidebar.metric("Countries Included", basic_stats['dataset_overview']['unique_countries'])
+    # Display metrics in a cleaner format - try to be generic
+    try:
+        st.sidebar.metric("Total Records", basic_stats['dataset_overview']['total_patients'])
+    except:
+        st.sidebar.metric("Total Records", len(analyzer.df))
     
-    mounjaro_rate = analyzer.analyze_treatment_effectiveness()['Mounjaro']['significant_weight_loss_rate']
-    st.sidebar.metric("Mounjaro Success Rate", f"{mounjaro_rate}%")
+    try:
+        st.sidebar.metric("Data Points", basic_stats['dataset_overview']['unique_countries'])
+    except:
+        st.sidebar.metric("Columns", len(analyzer.df.columns))
     
-    ae_rate = round((basic_stats['outcomes']['adverse_events']['total_with_ae'] / 
-                    basic_stats['dataset_overview']['total_patients']) * 100, 1)
-    st.sidebar.metric("Adverse Event Rate", f"{ae_rate}%")
+    try:
+        mounjaro_rate = analyzer.analyze_treatment_effectiveness()['Mounjaro']['significant_weight_loss_rate']
+        st.sidebar.metric("Primary Metric", f"{mounjaro_rate}%")
+    except:
+        # Show numeric column count instead
+        numeric_cols = analyzer.df.select_dtypes(include=[np.number]).columns
+        st.sidebar.metric("Numeric Fields", len(numeric_cols))
+    
+    try:
+        ae_rate = round((basic_stats['outcomes']['adverse_events']['total_with_ae'] / 
+                        basic_stats['dataset_overview']['total_patients']) * 100, 1)
+        st.sidebar.metric("Secondary Metric", f"{ae_rate}%")
+    except:
+        # Show categorical column count instead
+        cat_cols = analyzer.df.select_dtypes(include=['object']).columns
+        st.sidebar.metric("Categorical Fields", len(cat_cols))
+    
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
     # Main content based on selected page
@@ -549,7 +572,7 @@ def main():
 
 def show_overview_page(analyzer, visualizer, basic_stats):
     """Show the overview page."""
-    st.markdown('<h2 class="section-header">Study Overview</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="section-header">📊 Dataset Overview</h2>', unsafe_allow_html=True)
     
     # Key metrics in cards
     col1, col2, col3, col4 = st.columns(4)
