@@ -53,3 +53,17 @@ Thumbs.db
 *.tmp
 temp/
 tmp/
+
+# Video files (too large for GitHub)
+*.mp4
+*.m4a
+*.mov
+*.avi
+*.mkv
+
+# Audio files
+*.mp3
+*.wav
+
+# Output folder with generated files
+output_folder/
