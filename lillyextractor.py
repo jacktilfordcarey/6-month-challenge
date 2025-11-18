@@ -49,10 +49,10 @@ if 'magnifier' not in st.session_state:
 if 'tts_enabled' not in st.session_state:
     st.session_state.tts_enabled = False
 
-# Configure AI with fallback support (Groq -> Gemini -> OpenAI)
-GROQ_API_KEY = os.getenv('GROQ_API_KEY') or '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'
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or 'AIzaSyA3RdYq2jb-azGi81zltoittLOhz5AyHis'
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') or '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'
+# Configure AI - Only using Groq (keys stored in .env file, never in code)
+GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+GEMINI_API_KEY = None  # Removed - use .env if needed
+OPENAI_API_KEY = None  # Removed - use .env if needed
 
 model = None
 active_model = None
@@ -806,11 +806,11 @@ if st.session_state.high_contrast:
         
         [data-testid="stRadio"] > div {
             background-color: #000000 !important;
-            border: 2px solid #2196F3 !important;
+            border: none !important;
         }
         
         [data-testid="stRadio"] label {
-            color: #2196F3 !important;
+            color: #FFFF00 !important;
         }
         
         /* File uploader */
