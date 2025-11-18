@@ -41,6 +41,14 @@ st.set_page_config(
     layout="wide"
 )
 
+# Initialize session state variables FIRST
+if 'high_contrast' not in st.session_state:
+    st.session_state.high_contrast = False
+if 'magnifier' not in st.session_state:
+    st.session_state.magnifier = False
+if 'tts_enabled' not in st.session_state:
+    st.session_state.tts_enabled = False
+
 # Configure AI with fallback support (Groq -> Gemini -> OpenAI)
 GROQ_API_KEY = os.getenv('GROQ_API_KEY') or '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'
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or 'AIzaSyA3RdYq2jb-azGi81zltoittLOhz5AyHis'
@@ -175,38 +183,57 @@ def generate_ai_response(prompt):
         # Return all errors for debugging
         return f"All AI services failed. Errors: {' | '.join(errors_encountered)}"
 
-# Custom CSS for Lilly theme (Red, Black, and Dark Grey)
+# Custom CSS for White and Blue theme
 st.markdown("""
 <style>
-    /* Main app background - Dark grey for better readability */
+    /* Main app background - White */
     .main {
-        background-color: #1a1a1a !important;
+        background-color: #FFFFFF !important;
         padding: 2rem;
+        max-width: 100% !important;
+    }
+    
+    /* Better spacing when sidebar is open */
+    .block-container {
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+        max-width: 100% !important;
     }
     
     /* Sidebar */
     [data-testid="stSidebar"] {
-        background-color: #2d2d2d !important;
+        background-color: #E3F2FD !important;
+        min-width: 280px !important;
     }
     
-    /* App background - Black */
+    /* Reduce sidebar width when collapsed */
+    [data-testid="stSidebar"][aria-expanded="false"] {
+        min-width: 0px !important;
+    }
+    
+    /* App background - White */
     .stApp {
-        background-color: #0d0d0d !important;
+        background-color: #FFFFFF !important;
     }
     
-    /* Header - Black */
+    /* Header - Light Blue */
     header[data-testid="stHeader"] {
-        background-color: #0d0d0d !important;
+        background-color: #BBDEFB !important;
     }
     
-    /* Toolbar - Black */
+    /* Toolbar - Light Blue */
     [data-testid="stToolbar"] {
-        background-color: #0d0d0d !important;
+        background-color: #BBDEFB !important;
+    }
+    
+    /* Hide deploy button in header */
+    [data-testid="stToolbar"] button[kind="header"] {
+        display: none !important;
     }
     
     /* Top decoration */
     .stApp > header {
-        background-color: #0d0d0d !important;
+        background-color: #BBDEFB !important;
     }
     
     /* Block container - slightly lighter grey */
@@ -214,36 +241,44 @@ st.markdown("""
         background-color: transparent !important;
     }
     
-    /* All text default to light grey */
+    /* All text default to dark grey/black */
     body, p, span, div, label, .stMarkdown, .stText {
-        color: #d0d0d0 !important;
+        color: #212121 !important;
     }
     
-    /* Headers - Red */
+    /* Headers - Blue */
     h1 {
-        color: #E41E26 !important;
+        color: #1565C0 !important;
         font-weight: 700;
         margin-bottom: 0.5rem !important;
+        word-wrap: break-word !important;
     }
     h2, h3 {
-        color: #E41E26 !important;
+        color: #1976D2 !important;
         font-weight: 600;
         margin-top: 2rem !important;
+        word-wrap: break-word !important;
+    }
+    
+    /* Prevent text overflow */
+    p, div, span {
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
     }
     
     /* Subtitle text */
     .stMarkdown h3 {
-        color: #cccccc !important;
+        color: #424242 !important;
         font-weight: 400;
     }
     
-    /* Buttons - All buttons red */
+    /* Buttons - All buttons blue */
     button[kind="primary"],
     button[kind="secondary"],
     .stButton button,
     .stDownloadButton button {
-        background-color: #E41E26 !important;
-        color: #e8e8e8 !important;
+        background-color: #2196F3 !important;
+        color: #FFFFFF !important;
         border: none !important;
         padding: 0.6rem 1.5rem !important;
         font-size: 1rem !important;
@@ -256,35 +291,35 @@ st.markdown("""
     button[kind="secondary"]:hover,
     .stButton button:hover,
     .stDownloadButton button:hover {
-        background-color: #c01820 !important;
-        box-shadow: 0 4px 12px rgba(228, 30, 38, 0.4) !important;
+        background-color: #1976D2 !important;
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4) !important;
         transform: translateY(-1px) !important;
     }
     
-    /* File uploader - Dark grey box with red border */
+    /* File uploader - Light grey box with blue border */
     [data-testid="stFileUploader"] {
-        background-color: #2d2d2d !important;
-        border: 2px dashed #E41E26 !important;
+        background-color: #F5F5F5 !important;
+        border: 2px dashed #2196F3 !important;
         border-radius: 8px !important;
         padding: 2rem !important;
     }
     [data-testid="stFileUploader"] label {
-        color: #d0d0d0 !important;
+        color: #212121 !important;
         font-size: 1.1rem !important;
     }
     [data-testid="stFileUploader"] section {
-        background-color: #2d2d2d !important;
+        background-color: #F5F5F5 !important;
     }
     [data-testid="stFileUploader"] small {
-        color: #999999 !important;
+        color: #757575 !important;
     }
     
-    /* Dataframe - Dark grey background */
+    /* Dataframe - Light background */
     [data-testid="stDataFrame"] {
         background-color: transparent !important;
         border-radius: 8px !important;
         padding: 1rem !important;
-        border: 1px solid #3d3d3d !important;
+        border: 1px solid #E0E0E0 !important;
     }
     .stDataFrame {
         background-color: transparent !important;
@@ -295,110 +330,110 @@ st.markdown("""
         background-color: transparent !important;
     }
     
-    /* Table header - dark grey */
+    /* Table header - blue */
     [data-testid="stDataFrame"] thead tr th {
-        background-color: #3d3d3d !important;
-        color: #ffffff !important;
+        background-color: #2196F3 !important;
+        color: #FFFFFF !important;
         font-weight: 600 !important;
-        border-bottom: 2px solid #E41E26 !important;
+        border-bottom: 2px solid #1976D2 !important;
         padding: 0.75rem !important;
     }
     
-    /* Keep headers grey on dropdown/filter */
+    /* Keep headers blue on dropdown/filter */
     [data-testid="stDataFrame"] thead tr th:hover {
-        background-color: #3d3d3d !important;
+        background-color: #1E88E5 !important;
     }
     
     [data-testid="stDataFrame"] thead tr th[aria-sort] {
-        background-color: #3d3d3d !important;
+        background-color: #1E88E5 !important;
     }
     
     /* Table body cells - light grey */
     [data-testid="stDataFrame"] tbody tr td {
-        background-color: #5a5a5a !important;
-        color: #ffffff !important;
-        border-bottom: 1px solid #3d3d3d !important;
+        background-color: #FAFAFA !important;
+        color: #212121 !important;
+        border-bottom: 1px solid #E0E0E0 !important;
         padding: 0.5rem !important;
     }
     
     /* Alternating row colors for better readability */
     [data-testid="stDataFrame"] tbody tr:nth-child(even) td {
-        background-color: #6a6a6a !important;
+        background-color: #F5F5F5 !important;
     }
     
     /* Hover effect on rows */
     [data-testid="stDataFrame"] tbody tr:hover td {
-        background-color: #5a5a5a !important;
+        background-color: #E3F2FD !important;
     }
     
     /* Index column styling */
     [data-testid="stDataFrame"] tbody tr th {
-        background-color: #3d3d3d !important;
-        color: #ffffff !important;
+        background-color: #BBDEFB !important;
+        color: #212121 !important;
         font-weight: 500 !important;
     }
     
-    /* Expander - Dark grey with red accent */
+    /* Expander - Light grey with blue accent */
     [data-testid="stExpander"] {
-        background-color: #2d2d2d !important;
-        border: 1px solid #3d3d3d !important;
+        background-color: #F5F5F5 !important;
+        border: 1px solid #E0E0E0 !important;
         border-radius: 8px !important;
         margin: 1rem 0 !important;
     }
     details[open] > summary {
-        border-bottom: 2px solid #E41E26 !important;
+        border-bottom: 2px solid #2196F3 !important;
         padding-bottom: 0.5rem !important;
     }
     .streamlit-expanderHeader {
-        background-color: #2d2d2d !important;
-        color: #cccccc !important;
+        background-color: #F5F5F5 !important;
+        color: #212121 !important;
         font-weight: 600 !important;
     }
     
-    /* Metrics - Dark grey cards with red accent */
+    /* Metrics - Light grey cards with blue accent */
     [data-testid="stMetric"] {
-        background-color: #2d2d2d !important;
+        background-color: #F5F5F5 !important;
         padding: 1.2rem !important;
         border-radius: 8px !important;
-        border-left: 4px solid #E41E26 !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+        border-left: 4px solid #2196F3 !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
     }
     [data-testid="stMetricValue"] {
-        color: #E41E26 !important;
+        color: #1565C0 !important;
         font-weight: 700 !important;
         font-size: 2rem !important;
     }
     [data-testid="stMetricLabel"] {
-        color: #cccccc !important;
+        color: #424242 !important;
         font-weight: 500 !important;
     }
     
     /* Info/Success/Error boxes */
     .stAlert {
-        background-color: #2d2d2d !important;
-        color: #cccccc !important;
-        border-left: 5px solid #E41E26 !important;
+        background-color: #E3F2FD !important;
+        color: #212121 !important;
+        border-left: 5px solid #2196F3 !important;
         border-radius: 6px !important;
         padding: 1rem !important;
     }
     
     /* Success message */
     .stSuccess {
-        background-color: #2d2d2d !important;
-        color: #cccccc !important;
-        border-left: 5px solid #E41E26 !important;
+        background-color: #E8F5E9 !important;
+        color: #212121 !important;
+        border-left: 5px solid #4CAF50 !important;
     }
     
     /* Info message */
     .stInfo {
-        background-color: #2d2d2d !important;
-        color: #cccccc !important;
-        border-left: 5px solid #E41E26 !important;
+        background-color: #E3F2FD !important;
+        color: #212121 !important;
+        border-left: 5px solid #2196F3 !important;
     }
     
-    /* Spinner - Red */
+    /* Spinner - Blue */
     .stSpinner > div {
-        border-top-color: #E41E26 !important;
+        border-top-color: #2196F3 !important;
     }
     
     /* Horizontal rule */
@@ -409,15 +444,15 @@ st.markdown("""
     
     /* Code blocks */
     code {
-        background-color: #2d2d2d !important;
-        color: #E41E26 !important;
+        background-color: #F5F5F5 !important;
+        color: #1565C0 !important;
         padding: 0.2rem 0.4rem !important;
         border-radius: 4px !important;
     }
     
-    /* Remove any remaining white backgrounds */
+    /* Sidebar background */
     section[data-testid="stSidebar"] > div {
-        background-color: #2d2d2d !important;
+        background-color: #E3F2FD !important;
     }
     
     /* Column containers */
@@ -427,36 +462,36 @@ st.markdown("""
     
     /* Links */
     a {
-        color: #E41E26 !important;
+        color: #2196F3 !important;
     }
     a:hover {
-        color: #c01820 !important;
+        color: #1976D2 !important;
     }
     
     /* Chat messages */
     .stChatMessage {
-        background-color: #2d2d2d !important;
+        background-color: #F5F5F5 !important;
         border-radius: 8px !important;
-        border: 1px solid #3d3d3d !important;
+        border: 1px solid #E0E0E0 !important;
         padding: 1rem !important;
         margin: 0.5rem 0 !important;
     }
     
     /* User chat message */
     [data-testid="stChatMessageContent"] {
-        color: #d0d0d0 !important;
+        color: #212121 !important;
     }
     
     /* Chat input */
     [data-testid="stChatInput"] {
-        background-color: #2d2d2d !important;
-        border: 2px solid #E41E26 !important;
+        background-color: #F5F5F5 !important;
+        border: 2px solid #2196F3 !important;
         border-radius: 12px !important;
     }
     
     [data-testid="stChatInput"]:focus-within {
-        border: 2px solid #E41E26 !important;
-        box-shadow: 0 0 0 1px #E41E26 !important;
+        border: 2px solid #1976D2 !important;
+        box-shadow: 0 0 0 1px #1976D2 !important;
     }
     
     [data-testid="stChatInput"] > div {
@@ -474,31 +509,31 @@ st.markdown("""
     }
     
     [data-testid="stChatInput"] textarea {
-        background-color: #2d2d2d !important;
-        color: #d0d0d0 !important;
+        background-color: #F5F5F5 !important;
+        color: #212121 !important;
         border: none !important;
     }
     
     [data-testid="stChatInput"] textarea::placeholder {
-        color: #888888 !important;
+        color: #757575 !important;
     }
     
     /* Chat input button */
     [data-testid="stChatInput"] button {
-        background-color: #E41E26 !important;
-        color: #cccccc !important;
+        background-color: #2196F3 !important;
+        color: #FFFFFF !important;
     }
     
     /* Text area */
     textarea {
-        background-color: #2d2d2d !important;
-        color: #d0d0d0 !important;
+        background-color: #F5F5F5 !important;
+        color: #212121 !important;
         border: none !important;
     }
     
     /* Select box styling */
     [data-testid="stSelectbox"] {
-        background-color: #2d2d2d !important;
+        background-color: #F5F5F5 !important;
         border-radius: 8px !important;
     }
     
@@ -507,9 +542,9 @@ st.markdown("""
     }
     
     [data-testid="stSelectbox"] > div > div {
-        background-color: #2d2d2d !important;
-        color: #e8e8e8 !important;
-        border: 1px solid #3d3d3d !important;
+        background-color: #F5F5F5 !important;
+        color: #212121 !important;
+        border: 1px solid #E0E0E0 !important;
         border-radius: 8px !important;
     }
     
@@ -519,59 +554,60 @@ st.markdown("""
     
     /* Dropdown arrow color */
     [data-testid="stSelectbox"] svg {
-        fill: #ffffff !important;
-        color: #ffffff !important;
+        fill: #2196F3 !important;
+        color: #2196F3 !important;
     }
     
     /* Dropdown menu styling */
     [data-baseweb="popover"] {
-        background-color: #2d2d2d !important;
+        background-color: #FFFFFF !important;
         border-radius: 8px !important;
+        border: 1px solid #E0E0E0 !important;
     }
     
     [data-baseweb="menu"] {
-        background-color: #2d2d2d !important;
+        background-color: #FFFFFF !important;
         border-radius: 8px !important;
     }
     
     [role="option"] {
-        background-color: #2d2d2d !important;
-        color: #e8e8e8 !important;
+        background-color: #FFFFFF !important;
+        color: #212121 !important;
         border-radius: 4px !important;
     }
     
     [role="option"]:hover {
-        background-color: #3d3d3d !important;
+        background-color: #E3F2FD !important;
     }
     
     /* Radio button styling */
     [data-testid="stRadio"] label {
-        color: #e8e8e8 !important;
+        color: #212121 !important;
     }
     
     [data-testid="stRadio"] > div {
-        background-color: #2d2d2d !important;
+        background-color: #F5F5F5 !important;
         padding: 0.5rem !important;
         border-radius: 6px !important;
     }
     
     /* Footer styling */
     footer {
-        background-color: #0d0d0d !important;
-        color: #888888 !important;
+        background-color: #F5F5F5 !important;
+        color: #757575 !important;
         visibility: visible !important;
     }
     
     footer p {
-        color: #888888 !important;
+        color: #757575 !important;
     }
     
     footer div {
-        background-color: #0d0d0d !important;
+        background-color: #F5F5F5 !important;
     }
     
     [data-testid="stBottomBlockContainer"] {
-        background-color: #1a1a1a !important;
+        background-color: #FFFFFF !important;
     }
     
     /* Bottom container */
@@ -581,17 +617,17 @@ st.markdown("""
     
     /* Streamlit footer */
     footer[data-testid="stFooter"] {
-        background-color: #0d0d0d !important;
+        background-color: #F5F5F5 !important;
     }
     
     footer[data-testid="stFooter"] > div {
-        background-color: #0d0d0d !important;
+        background-color: #F5F5F5 !important;
     }
     
     /* Chat footer area */
     [data-testid="stChatInputContainer"] {
-        background-color: #1a1a1a !important;
-        border-top: 1px solid #3d3d3d !important;
+        background-color: #FFFFFF !important;
+        border-top: 1px solid #E0E0E0 !important;
     }
     
     /* More comprehensive table styling */
@@ -606,46 +642,46 @@ st.markdown("""
     
     table {
         background-color: transparent !important;
-        color: #ffffff !important;
+        color: #212121 !important;
         border-collapse: collapse !important;
     }
     
     thead {
-        background-color: #3d3d3d !important;
+        background-color: #2196F3 !important;
     }
     
     th {
-        background-color: #3d3d3d !important;
-        color: #ffffff !important;
+        background-color: #2196F3 !important;
+        color: #FFFFFF !important;
     }
     
     td {
-        background-color: #5a5a5a !important;
-        color: #ffffff !important;
+        background-color: #FAFAFA !important;
+        color: #212121 !important;
     }
     
     tr:nth-child(even) td {
-        background-color: #6a6a6a !important;
+        background-color: #F5F5F5 !important;
     }
     
     /* Streamlit dataframe specific */
     .dataframe {
         background-color: transparent !important;
-        color: #ffffff !important;
+        color: #212121 !important;
     }
     
     .dataframe thead th {
-        background-color: #3d3d3d !important;
-        color: #ffffff !important;
+        background-color: #2196F3 !important;
+        color: #FFFFFF !important;
     }
     
     .dataframe tbody td {
-        background-color: #5a5a5a !important;
-        color: #ffffff !important;
+        background-color: #FAFAFA !important;
+        color: #212121 !important;
     }
     
     .dataframe tbody tr:nth-child(even) td {
-        background-color: #6a6a6a !important;
+        background-color: #F5F5F5 !important;
     }
     
     /* Override any remaining white backgrounds */
@@ -660,13 +696,402 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Header
+# Apply High Contrast Mode CSS if enabled
+if st.session_state.high_contrast:
+    st.markdown("""
+    <style>
+        /* High Contrast Mode Overrides */
+        .main {
+            background-color: #000000 !important;
+        }
+        
+        .stApp {
+            background-color: #000000 !important;
+        }
+        
+        header[data-testid="stHeader"] {
+            background-color: #000000 !important;
+        }
+        
+        [data-testid="stToolbar"] {
+            background-color: #000000 !important;
+        }
+        
+        .stApp > header {
+            background-color: #000000 !important;
+        }
+        
+        /* Hide deploy button */
+        [data-testid="stToolbar"] button[kind="header"] {
+            display: none !important;
+        }
+        
+        [data-testid="stSidebar"] {
+            background-color: #000000 !important;
+            border-right: 3px solid #FFFF00 !important;
+        }
+        
+        section[data-testid="stSidebar"] > div {
+            background-color: #000000 !important;
+        }
+        
+        body, p, span, div, label, .stMarkdown, .stText {
+            color: #FFFF00 !important;
+            font-weight: 600 !important;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: #FFFF00 !important;
+            text-shadow: 2px 2px 4px #000000 !important;
+        }
+        
+        /* Main content headers must be yellow - all variants */
+        .main h1, .main h2, .main h3, .main h4, .main h5, .main h6,
+        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5, .stMarkdown h6,
+        [data-testid="stMarkdownContainer"] h1,
+        [data-testid="stMarkdownContainer"] h2,
+        [data-testid="stMarkdownContainer"] h3,
+        [data-testid="stMarkdownContainer"] h4,
+        [data-testid="stMarkdownContainer"] h5,
+        [data-testid="stMarkdownContainer"] h6 {
+            color: #FFFF00 !important;
+            text-shadow: 2px 2px 4px #000000 !important;
+            background-color: transparent !important;
+        }
+        
+        /* Sidebar accessibility section - black text on yellow background */
+        [data-testid="stSidebar"] h3:first-of-type {
+            color: #000000 !important;
+            background-color: #FFFF00 !important;
+            padding: 0.5rem !important;
+            border-radius: 4px !important;
+            text-shadow: none !important;
+        }
+        
+        button, .stButton button, .stDownloadButton button {
+            background-color: #FFFF00 !important;
+            color: #000000 !important;
+            border: 3px solid #FFFFFF !important;
+            font-weight: 700 !important;
+        }
+        
+        button *, .stButton button *, .stDownloadButton button * {
+            color: #000000 !important;
+        }
+        
+        button:hover, .stButton button:hover {
+            background-color: #FFFFFF !important;
+            color: #000000 !important;
+        }
+        
+        /* Radio buttons */
+        [data-testid="stRadio"] {
+            background-color: #000000 !important;
+        }
+        
+        [data-testid="stRadio"] > div {
+            background-color: #000000 !important;
+            border: 2px solid #FFFF00 !important;
+        }
+        
+        [data-testid="stRadio"] label {
+            color: #FFFF00 !important;
+        }
+        
+        /* File uploader */
+        [data-testid="stFileUploader"] {
+            background-color: #000000 !important;
+            border: 3px dashed #FFFF00 !important;
+        }
+        
+        [data-testid="stFileUploader"] section {
+            background-color: #000000 !important;
+            border: 3px dashed #FFFF00 !important;
+        }
+        
+        [data-testid="stFileUploader"] label {
+            color: #FFFF00 !important;
+        }
+        
+        [data-testid="stFileUploader"] small {
+            color: #FFFF00 !important;
+        }
+        
+        /* File uploader browse button */
+        [data-testid="stFileUploader"] button {
+            background-color: #FFFF00 !important;
+            color: #000000 !important;
+            border: 3px solid #FFFFFF !important;
+        }
+        
+        /* Selectbox */
+        [data-testid="stSelectbox"] {
+            background-color: #000000 !important;
+        }
+        
+        [data-testid="stSelectbox"] > div > div {
+            background-color: #000000 !important;
+            color: #FFFF00 !important;
+            border: 3px solid #FFFF00 !important;
+        }
+        
+        [data-testid="stSelectbox"] label {
+            color: #FFFF00 !important;
+        }
+        
+        [data-testid="stSelectbox"] svg {
+            fill: #FFFF00 !important;
+            color: #FFFF00 !important;
+        }
+        
+        /* Dropdown menu */
+        [data-baseweb="popover"] {
+            background-color: #000000 !important;
+            border: 3px solid #FFFF00 !important;
+        }
+        
+        [data-baseweb="menu"] {
+            background-color: #000000 !important;
+        }
+        
+        [role="option"] {
+            background-color: #000000 !important;
+            color: #FFFF00 !important;
+        }
+        
+        [role="option"]:hover {
+            background-color: #333333 !important;
+            color: #FFFFFF !important;
+        }
+        
+        /* Dataframes */
+        [data-testid="stDataFrame"] {
+            border: 3px solid #FFFF00 !important;
+            background-color: #000000 !important;
+        }
+        
+        [data-testid="stDataFrame"] thead tr th {
+            background-color: #FFFF00 !important;
+            color: #000000 !important;
+        }
+        
+        [data-testid="stDataFrame"] tbody tr td {
+            background-color: #000000 !important;
+            color: #FFFF00 !important;
+            border: 2px solid #FFFF00 !important;
+        }
+        
+        table, .dataframe {
+            background-color: #000000 !important;
+            border: 3px solid #FFFF00 !important;
+        }
+        
+        th {
+            background-color: #FFFF00 !important;
+            color: #000000 !important;
+        }
+        
+        td {
+            background-color: #000000 !important;
+            color: #FFFF00 !important;
+        }
+        
+        /* Input fields */
+        input, textarea, select {
+            background-color: #000000 !important;
+            color: #FFFF00 !important;
+            border: 3px solid #FFFF00 !important;
+        }
+        
+        input::placeholder, textarea::placeholder {
+            color: #CCCC00 !important;
+        }
+        
+        /* Chat messages */
+        .stChatMessage {
+            background-color: #000000 !important;
+            border: 3px solid #FFFF00 !important;
+        }
+        
+        [data-testid="stChatMessageContent"] {
+            color: #FFFF00 !important;
+        }
+        
+        [data-testid="stChatInput"] {
+            background-color: #000000 !important;
+            border: 3px solid #FFFF00 !important;
+        }
+        
+        [data-testid="stChatInput"] textarea {
+            background-color: #000000 !important;
+            color: #FFFF00 !important;
+        }
+        
+        /* Metrics */
+        [data-testid="stMetric"] {
+            background-color: #000000 !important;
+            border: 3px solid #FFFF00 !important;
+        }
+        
+        [data-testid="stMetricValue"] {
+            color: #FFFFFF !important;
+        }
+        
+        [data-testid="stMetricLabel"] {
+            color: #FFFF00 !important;
+        }
+        
+        /* Expander */
+        [data-testid="stExpander"] {
+            background-color: #000000 !important;
+            border: 3px solid #FFFF00 !important;
+        }
+        
+        .streamlit-expanderHeader {
+            background-color: #000000 !important;
+            color: #FFFF00 !important;
+        }
+        
+        /* Alerts */
+        .stAlert, .stSuccess, .stInfo, .stWarning, .stError {
+            background-color: #000000 !important;
+            color: #FFFF00 !important;
+            border: 3px solid #FFFF00 !important;
+        }
+        
+        /* Links */
+        a {
+            color: #FFFF00 !important;
+        }
+        
+        a:hover {
+            color: #FFFFFF !important;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: #000000 !important;
+            color: #FFFF00 !important;
+        }
+        
+        footer p {
+            color: #FFFF00 !important;
+        }
+        
+        /* Sidebar text input (chat) in high contrast */
+        [data-testid="stSidebar"] div[data-testid="stTextInput"] input {
+            background-color: #000000 !important;
+            border: 3px solid #FFFF00 !important;
+            color: #FFFF00 !important;
+        }
+        
+        [data-testid="stSidebar"] div[data-testid="stTextInput"] input:focus {
+            border: 3px solid #FFFFFF !important;
+            box-shadow: 0 0 0 1px #FFFFFF !important;
+        }
+        
+        [data-testid="stSidebar"] div[data-testid="stTextInput"] input::placeholder {
+            color: #CCCC00 !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+# Apply Magnifier Mode CSS if enabled
+if st.session_state.magnifier:
+    st.markdown("""
+    <style>
+        /* Magnifier Mode - Larger Text */
+        body, p, span, div, label, .stMarkdown, .stText {
+            font-size: 1.3rem !important;
+            line-height: 1.8 !important;
+        }
+        
+        h1 {
+            font-size: 3.5rem !important;
+        }
+        
+        h2 {
+            font-size: 2.8rem !important;
+        }
+        
+        h3 {
+            font-size: 2.2rem !important;
+        }
+        
+        button {
+            font-size: 1.4rem !important;
+            padding: 1rem 2rem !important;
+        }
+        
+        input, textarea {
+            font-size: 1.3rem !important;
+        }
+        
+        [data-testid="stMetricValue"] {
+            font-size: 3rem !important;
+        }
+        
+        [data-testid="stMetricLabel"] {
+            font-size: 1.5rem !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+# Text-to-Speech Function
+def speak_text(text):
+    """Generate text-to-speech audio"""
+    if st.session_state.tts_enabled and text:
+        try:
+            from gtts import gTTS
+            import base64
+            
+            # Generate speech
+            tts = gTTS(text=text[:500], lang='en', slow=False)  # Limit to first 500 chars
+            
+            # Save to bytes
+            audio_buffer = BytesIO()
+            tts.write_to_fp(audio_buffer)
+            audio_buffer.seek(0)
+            
+            # Convert to base64 for HTML audio player
+            audio_base64 = base64.b64encode(audio_buffer.read()).decode()
+            
+            # Auto-play audio
+            st.markdown(f"""
+            <audio autoplay>
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+            """, unsafe_allow_html=True)
+        except Exception as e:
+            pass  # Silently fail if TTS not available
+
+# Header with Accessibility Controls
 st.markdown("""
-<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;'>
-    <h1 style='margin: 0; color: #E41E26;'>LillyHelper</h1>
-    <span style='color: #4a4a4a; font-size: 1.5rem;'>AI Tool to Help Personalise/Visualise RWE</span>
+<div style='margin-bottom: 1rem;'>
+    <h1 style='margin: 0; color: #1565C0;'>LillyHelper</h1>
+    <span style='color: #424242; font-size: 1.2rem;'>AI Tool to Help Personalise/Visualise RWE</span>
 </div>
 """, unsafe_allow_html=True)
+
+st.markdown("**Accessibility**")
+acc_col1, acc_col2, acc_col3 = st.columns(3)
+
+with acc_col1:
+    if st.button("Contrast" if not st.session_state.high_contrast else "✓ Contrast", key="hc_btn", use_container_width=True):
+        st.session_state.high_contrast = not st.session_state.high_contrast
+        st.rerun()
+
+with acc_col2:
+    if st.button("Magnify" if not st.session_state.magnifier else "✓ Magnify", key="mag_btn", use_container_width=True):
+        st.session_state.magnifier = not st.session_state.magnifier
+        st.rerun()
+
+with acc_col3:
+    if st.button("TTS" if not st.session_state.tts_enabled else "✓ TTS", key="tts_btn", use_container_width=True):
+        st.session_state.tts_enabled = not st.session_state.tts_enabled
+        st.rerun()
+
+st.markdown("---")
 
 # Helper functions
 def extract_text_from_pptx(file):
@@ -945,6 +1370,14 @@ Present insights in a format that supports evidence-based clinical decision-maki
                         st.session_state.analysis_text = analysis_text
                         
                         st.markdown("#### Cortex Analysis Results")
+                        
+                        # Add TTS button for analysis
+                        if st.session_state.tts_enabled:
+                            col_tts1, col_tts2 = st.columns([1, 5])
+                            with col_tts1:
+                                if st.button("🔊 Read Aloud", key="tts_analysis"):
+                                    speak_text(analysis_text)
+                        
                         st.markdown(analysis_text)
                         
                         # Store analysis in session state for visualization
@@ -1009,6 +1442,12 @@ Keep it professional, concise, and focused on actionable insights for HCPs."""
                             st.session_state['professional_summary'] = professional_summary
                             
                             st.markdown("### 📋 Professional Summary")
+                            
+                            # Add TTS button for summary
+                            if st.session_state.tts_enabled:
+                                if st.button("🔊 Read Summary Aloud", key="tts_summary"):
+                                    speak_text(professional_summary)
+                            
                             st.markdown(professional_summary)
                             
                             # Download option for summary
@@ -1382,19 +1821,19 @@ with st.sidebar:
     <style>
         /* Custom text input styling for chat */
         div[data-testid="stTextInput"] input {
-            background-color: #5a5a5a !important;
-            border: none !important;
+            background-color: #F5F5F5 !important;
+            border: 2px solid #2196F3 !important;
             border-radius: 25px !important;
-            color: #d0d0d0 !important;
+            color: #212121 !important;
             padding: 12px 15px !important;
         }
         div[data-testid="stTextInput"] input:focus {
-            border: none !important;
-            box-shadow: none !important;
+            border: 2px solid #1976D2 !important;
+            box-shadow: 0 0 0 1px #1976D2 !important;
             outline: none !important;
         }
         div[data-testid="stTextInput"] input::placeholder {
-            color: #999999 !important;
+            color: #757575 !important;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -1494,6 +1933,11 @@ Response:"""
                 
                 # Add assistant response to chat history
                 st.session_state.chatbot_messages.append({"role": "assistant", "content": response})
+                
+                # Auto-play TTS for chatbot response if enabled
+                if st.session_state.tts_enabled:
+                    speak_text(response)
+                    
             except Exception as e:
                 st.error(f"Error generating response: {str(e)}")
                 # Remove the user message if response failed
