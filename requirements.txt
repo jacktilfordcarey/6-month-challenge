@@ -14,8 +14,9 @@ gtts>=2.3.0
 # Visualization
 plotly>=5.0.0
 
-# PowerPoint support (optional)
+# Document support
 python-pptx>=0.6.21
+PyPDF2>=3.0.0
 
 # Environment variables
 python-dotenv>=1.0.0

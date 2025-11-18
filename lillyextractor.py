@@ -20,6 +20,12 @@ except ImportError:
     PPTX_SUPPORT = False
 
 try:
+    from PyPDF2 import PdfReader
+    PDF_SUPPORT = True
+except ImportError:
+    PDF_SUPPORT = False
+
+try:
     from groq import Groq
     GROQ_AVAILABLE = True
 except ImportError:
@@ -1186,9 +1192,18 @@ text_input = None
 file_type = None
 
 if input_method == "Upload File":
+    # Style selectbox with blue accent
+    st.markdown("""
+    <style>
+        div[data-testid="stSelectbox"] select {
+            accent-color: #2196F3 !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
     file_type = st.selectbox(
         "Select file type:",
-        ["Data File (Excel/CSV)", "PowerPoint Presentation", "Text Document", "JSON Data"]
+        ["Data File (Excel/CSV)", "PDF Document", "PowerPoint Presentation", "Text Document", "JSON Data"]
     )
     
     if file_type == "Data File (Excel/CSV)":
@@ -1196,6 +1211,12 @@ if input_method == "Upload File":
             "Choose an Excel or CSV file",
             type=['xlsx', 'xls', 'csv'],
             help="Upload your data file for analysis"
+        )
+    elif file_type == "PDF Document":
+        uploaded_file = st.file_uploader(
+            "Choose a PDF file",
+            type=['pdf'],
+            help="Upload PDF document for analysis"
         )
     elif file_type == "PowerPoint Presentation":
         uploaded_file = st.file_uploader(
@@ -1344,6 +1365,25 @@ if uploaded_file is not None or (text_input and text_input.strip()):
                     else:
                         df = pd.read_excel(uploaded_file)
                 st.success(f"Loaded data: {len(df)} rows x {len(df.columns)} columns")
+            
+            elif file_type == "PDF Document":
+                if PDF_SUPPORT:
+                    with st.spinner("Extracting text from PDF..."):
+                        try:
+                            pdf_reader = PdfReader(uploaded_file)
+                            extracted_text = ""
+                            for page_num, page in enumerate(pdf_reader.pages, 1):
+                                extracted_text += f"\n--- Page {page_num} ---\n"
+                                extracted_text += page.extract_text()
+                            
+                            st.success(f"Extracted text from {len(pdf_reader.pages)} pages")
+                            st.markdown("### PDF Content")
+                            with st.expander("View extracted text", expanded=False):
+                                st.text_area("PDF Content", extracted_text, height=300, key="pdf_text")
+                        except Exception as e:
+                            st.error(f"Error extracting PDF: {str(e)}")
+                else:
+                    st.error("PDF support not available. Install PyPDF2 package.")
             
             elif file_type == "PowerPoint Presentation":
                 extracted_text, tables = extract_text_from_pptx(uploaded_file)
