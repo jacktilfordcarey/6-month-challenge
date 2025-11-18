@@ -591,6 +591,21 @@ st.markdown("""
         border-radius: 6px !important;
     }
     
+    /* Radio button input color - blue instead of red */
+    [data-testid="stRadio"] input[type="radio"] {
+        accent-color: #2196F3 !important;
+        filter: hue-rotate(200deg) saturate(1.5) !important;
+    }
+    
+    [data-testid="stRadio"] label span {
+        accent-color: #2196F3 !important;
+    }
+    
+    /* Force blue on radio container */
+    [data-testid="stRadio"] [role="radiogroup"] {
+        accent-color: #2196F3 !important;
+    }
+    
     /* Footer styling */
     footer {
         background-color: #F5F5F5 !important;
@@ -791,11 +806,11 @@ if st.session_state.high_contrast:
         
         [data-testid="stRadio"] > div {
             background-color: #000000 !important;
-            border: 2px solid #FFFF00 !important;
+            border: 2px solid #2196F3 !important;
         }
         
         [data-testid="stRadio"] label {
-            color: #FFFF00 !important;
+            color: #2196F3 !important;
         }
         
         /* File uploader */
@@ -819,9 +834,9 @@ if st.session_state.high_contrast:
         
         /* File uploader browse button */
         [data-testid="stFileUploader"] button {
-            background-color: #FFFF00 !important;
-            color: #000000 !important;
-            border: 3px solid #FFFFFF !important;
+            background-color: #2196F3 !important;
+            color: #FFFFFF !important;
+            border: 2px solid #1565C0 !important;
         }
         
         /* Selectbox */
@@ -1147,7 +1162,19 @@ if 'analysis_text' not in st.session_state:
 if 'chatbot_messages' not in st.session_state:
     st.session_state.chatbot_messages = []
 
-# Input method selection
+# Input method selection with inline CSS override
+st.markdown("""
+<style>
+    /* Force blue radio buttons for input method */
+    div[data-testid="stRadio"] input[type="radio"] {
+        accent-color: #2196F3 !important;
+    }
+    div[data-testid="stRadio"] input[type="radio"]:checked {
+        background-color: #2196F3 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 input_method = st.radio(
     "Choose input method:",
     ["Upload File", "Enter Text Directly"],
@@ -1198,6 +1225,77 @@ else:
     file_type = "Text Input"
 
 if uploaded_file is not None or (text_input and text_input.strip()):
+    # User Profile Section
+    st.markdown("---")
+    st.markdown("### 👤 User Profile")
+    st.markdown("Help us customize the analysis for you:")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        knowledge_level = st.selectbox(
+            "Knowledge Level",
+            [
+                "Beginner - New to RWE/Clinical Data",
+                "Intermediate - Some experience with data analysis",
+                "Advanced - Experienced with RWE studies",
+                "Expert - Clinical research professional"
+            ],
+            help="Select your familiarity with Real-World Evidence and clinical data"
+        )
+    
+    with col2:
+        country = st.selectbox(
+            "Country/Language",
+            [
+                "United States - English",
+                "United Kingdom - English",
+                "Canada - English/French",
+                "Australia - English",
+                "Germany - German",
+                "France - French",
+                "Spain - Spanish",
+                "Italy - Italian",
+                "Japan - Japanese",
+                "China - Mandarin",
+                "Brazil - Portuguese",
+                "India - English/Hindi",
+                "Other"
+            ],
+            help="Select your country and preferred language"
+        )
+    
+    with col3:
+        hcp_type = st.selectbox(
+            "Healthcare Professional Type",
+            [
+                "Physician - General Practice",
+                "Physician - Specialist",
+                "Nurse Practitioner",
+                "Pharmacist",
+                "Researcher/Scientist",
+                "Clinical Trial Coordinator",
+                "Healthcare Administrator",
+                "Medical Affairs",
+                "Regulatory Affairs",
+                "Data Analyst/Statistician",
+                "Student/Trainee",
+                "Other"
+            ],
+            help="Select your role in healthcare"
+        )
+    
+    # Store in session state for AI to use
+    st.session_state.user_profile = {
+        "knowledge_level": knowledge_level.split(" - ")[0],
+        "knowledge_desc": knowledge_level,
+        "country": country.split(" - ")[0],
+        "language": country.split(" - ")[-1] if " - " in country else "English",
+        "hcp_type": hcp_type.split(" - ")[0] if " - " in hcp_type else hcp_type
+    }
+    
+    st.markdown("---")
+    
     try:
         df = None
         extracted_text = None
@@ -1307,6 +1405,11 @@ if uploaded_file is not None or (text_input and text_input.strip()):
                     # Prepare data summary - prioritize extracted text for PowerPoint/Text files
                     if extracted_text and file_type in ["PowerPoint Presentation", "Text Document"]:
                         # For PowerPoint and text files, analyze the content, not the tables
+                        user_profile = st.session_state.get('user_profile', {})
+                        knowledge = user_profile.get('knowledge_level', 'Intermediate')
+                        language = user_profile.get('language', 'English')
+                        hcp_role = user_profile.get('hcp_type', 'Healthcare Professional')
+                        
                         data_summary = f"""
 Content Analysis:
 - Type: {file_type}
@@ -1315,7 +1418,10 @@ Content Analysis:
 Full Content:
 {extracted_text}
 """
-                        prompt = f"""You are analyzing this content for a Healthcare Professional (HCP). Personalize your analysis for their clinical perspective and provide:
+                        prompt = f"""You are analyzing this content for a {hcp_role} with {knowledge} knowledge level. 
+Language preference: {language} (adapt complexity and terminology accordingly).
+
+Personalize your analysis for their clinical perspective and provide:
 
 1. Executive Summary: Key takeaways relevant to clinical practice
 2. Clinical Insights: How this information applies to patient care and treatment decisions
@@ -1329,6 +1435,11 @@ Present the analysis in a clear, professional format that an HCP would find valu
 {data_summary}
 """
                     elif df is not None and not df.empty:
+                        user_profile = st.session_state.get('user_profile', {})
+                        knowledge = user_profile.get('knowledge_level', 'Intermediate')
+                        language = user_profile.get('language', 'English')
+                        hcp_role = user_profile.get('hcp_type', 'Healthcare Professional')
+                        
                         data_summary = f"""
 Dataset Overview:
 - Total Rows: {len(df)}
@@ -1344,7 +1455,10 @@ Statistical Summary:
 Sample Data:
 {df.head().to_string()}
 """
-                        prompt = f"""You are analyzing this Real-World Evidence (RWE) data for a Healthcare Professional (HCP). Personalize your analysis for clinical practice:
+                        prompt = f"""You are analyzing this Real-World Evidence (RWE) data for a {hcp_role} with {knowledge} knowledge level.
+Language preference: {language} (adapt complexity and terminology accordingly).
+
+Personalize your analysis for clinical practice:
 
 1. Clinical Summary: What does this data tell us about patient outcomes, treatment effectiveness, or healthcare patterns?
 2. Patient Impact: How do these findings relate to patient care and treatment decisions?
@@ -1911,18 +2025,29 @@ with st.sidebar:
                 context += f"\n\nData Context: {len(df)} rows, {len(df.columns)} columns"
                 context += f"\nColumns: {', '.join(df.columns.tolist()[:10])}"
             
-            # Create HCP-focused prompt
+            # Create HCP-focused prompt with user profile
+            user_profile = st.session_state.get('user_profile', {})
+            knowledge = user_profile.get('knowledge_level', 'Intermediate')
+            language = user_profile.get('language', 'English')
+            hcp_role = user_profile.get('hcp_type', 'Healthcare Professional')
+            
             full_prompt = f"""You are LillyHelper, an AI assistant helping Healthcare Professionals (HCPs) analyze Real-World Evidence (RWE) data.
+
+User Profile:
+- Role: {hcp_role}
+- Knowledge Level: {knowledge}
+- Language: {language}
 
 User Question: {prompt}
 
 {context}
 
-Provide a helpful, professional response tailored for an HCP. Focus on:
-- Clinical relevance and practical application
-- Evidence-based insights
+Provide a helpful, professional response tailored for this {hcp_role} with {knowledge} knowledge level. 
+Adapt your response complexity and terminology to match their expertise. Focus on:
+- Clinical relevance and practical application for their specific role
+- Evidence-based insights at the appropriate technical level
 - Clear, actionable guidance
-- Professional medical terminology when appropriate
+- Terminology suitable for {knowledge} level
 
 Response:"""
             
