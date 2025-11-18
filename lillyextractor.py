@@ -1216,12 +1216,31 @@ if input_method == "Upload File":
             help="Upload JSON file with structured data"
         )
 else:
+    # Mobile-friendly text input with submit button
+    st.markdown("#### Enter Text (Mobile Supported)")
     text_input = st.text_area(
         "Enter your data or analysis:",
-        height=300,
+        height=200,
         placeholder="Paste your text, data, or analysis here...\n\nYou can paste:\n- CSV data\n- Analysis text\n- Research findings\n- Any text for AI analysis",
-        help="Enter any text for AI analysis and insights"
+        help="Enter any text for AI analysis and insights",
+        key="text_input_area"
     )
+    
+    # Add submit button for mobile users
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        submit_text = st.button("Submit Text", type="primary", use_container_width=True, help="Click to process your text")
+    with col2:
+        clear_text = st.button("Clear", use_container_width=True, help="Clear text input")
+    
+    if clear_text:
+        st.session_state.text_input_area = ""
+        st.rerun()
+    
+    # Only process if submit button is clicked or text exists
+    if not submit_text and not text_input:
+        text_input = None
+    
     file_type = "Text Input"
 
 if uploaded_file is not None or (text_input and text_input.strip()):
