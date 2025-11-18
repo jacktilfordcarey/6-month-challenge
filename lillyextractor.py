@@ -1298,12 +1298,12 @@ if uploaded_file is not None or (text_input and text_input.strip()):
                 st.markdown(extracted_text[:1000] + ("..." if len(extracted_text) > 1000 else ""))
         
         # Generate summary with AI
-        st.markdown("### Cortex AI Analysis")
-        if st.button("Ask Cortex to Analyze", type="primary", use_container_width=True):
+        st.markdown("### AI Analysis")
+        if st.button("Ask AI to Analyze", type="primary", use_container_width=True):
             if not model:
                 st.error("⚠️ API key not configured. Please set GEMINI_API_KEY in .env file")
             else:
-                with st.spinner("Cortex is analyzing your data..."):
+                with st.spinner("AI is analyzing your data..."):
                     # Prepare data summary - prioritize extracted text for PowerPoint/Text files
                     if extracted_text and file_type in ["PowerPoint Presentation", "Text Document"]:
                         # For PowerPoint and text files, analyze the content, not the tables
@@ -1369,7 +1369,7 @@ Present insights in a format that supports evidence-based clinical decision-maki
                         analysis_text = generate_ai_response(prompt)
                         st.session_state.analysis_text = analysis_text
                         
-                        st.markdown("#### Cortex Analysis Results")
+                        st.markdown("#### AI Analysis Results")
                         
                         # Add TTS button for analysis
                         if st.session_state.tts_enabled:
@@ -1486,7 +1486,7 @@ Powered by Lilly Cortex AI
                 visualize_button = st.button("Generate Visualisations & 3D AR Graphs", use_container_width=True)
                 if visualize_button:
                     # Show AI Analysis again
-                    st.markdown("### Cortex AI Analysis")
+                    st.markdown("### AI Analysis")
                     st.markdown(st.session_state.get('analysis_text', ''))
                     st.markdown("---")
                     with st.spinner("Creating interactive visualisations..."):
@@ -1757,7 +1757,7 @@ File: {file_name}
 Type: {file_type}
 Generated: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-Cortex AI Analysis:
+AI Analysis:
 {st.session_state['analysis_text']}
 
 Chat History:
@@ -1783,8 +1783,8 @@ else:
     1. **Choose** between uploading a file or entering text directly
     2. **Upload** your file (Excel, CSV, PowerPoint, Text, JSON) OR **paste** text in the text box
     3. **Review** the data preview and details
-    4. **Click** "Ask Cortex to Analyze" to get AI-powered insights
-    5. **Ask questions** using the Cortex chatbot
+    4. **Click** "Ask AI to Analyze" to get AI-powered insights
+    5. **Ask questions** using the AI chatbot
     6. **Generate visualizations** including 3D AR graphs
     7. **Download** your results as needed
     """)
@@ -1801,19 +1801,19 @@ else:
     st.markdown("### What you'll get:")
     st.markdown("""
     - **Quick overview** of your data or content structure
-    - **Cortex AI-powered insights** about patterns and trends
+    - **AI-powered insights** about patterns and trends
     - **Key statistics** for numeric columns
     - **Clinical recommendations** for further analysis
     """)
 
 # Footer
 st.markdown("---")
-st.markdown("*Powered by Lilly Cortex AI*")
+st.markdown("*Powered by Lilly AI*")
 
 # LillyHelper Chatbot - Sidebar
 with st.sidebar:
     st.markdown("### LillyHelper Assistant")
-    st.markdown("Ask Cortex about your Real-World Evidence data, clinical insights, or analysis questions.")
+    st.markdown("Ask AI about your Real-World Evidence data, clinical insights, or analysis questions.")
     st.markdown("---")
     
     # Custom CSS for chat input styling
@@ -1870,7 +1870,7 @@ with st.sidebar:
     # Text input
     prompt = st.text_input(
         "Message",
-        placeholder="Ask Cortex anything...",
+        placeholder="Ask AI anything...",
         key="chat_text_input",
         label_visibility="collapsed"
     )
