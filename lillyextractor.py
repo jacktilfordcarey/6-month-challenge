@@ -1,5 +1,5 @@
 """
-LillyHelper - AI Tool to Help Understand/Visuals RWE
+MedInsight - AI Tool to Help Understand/Visuals RWE
 Clean, professional interface for RWE data analysis and visualization
 """
 
@@ -42,8 +42,8 @@ load_dotenv()
 
 # Configure page
 st.set_page_config(
-    page_title="LillyHelper",
-    page_icon="📊",
+    page_title="MedInsight",
+    page_icon="🔬",
     layout="wide"
 )
 
@@ -54,6 +54,14 @@ if 'magnifier' not in st.session_state:
     st.session_state.magnifier = False
 if 'tts_enabled' not in st.session_state:
     st.session_state.tts_enabled = False
+if 'chatbot_messages' not in st.session_state:
+    st.session_state.chatbot_messages = []
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if 'analysis_text' not in st.session_state:
+    st.session_state.analysis_text = ''
+if 'input_method' not in st.session_state:
+    st.session_state.input_method = "Upload File"
 
 # Configure AI - Only using Groq (keys stored in .env file, never in code)
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
@@ -189,12 +197,36 @@ def generate_ai_response(prompt):
         # Return all errors for debugging
         return f"All AI services failed. Errors: {' | '.join(errors_encountered)}"
 
-# Custom CSS for White and Blue theme
+# Load external CSS file
+def load_css():
+    with open("style.css") as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+try:
+    load_css()
+except:
+    # Fallback inline CSS if file not found
+    st.markdown("""
+    <style>
+        .main {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+        .block-container {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-radius: 20px !important;
+            padding: 2rem !important;
+        }
+        [data-testid="stRadio"] input[type="radio"] {
+            accent-color: #667eea !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+# Keep minimal inline CSS for compatibility
 st.markdown("""
 <style>
-    /* Main app background - White */
+    /* Ensure main styling */
     .main {
-        background-color: #FFFFFF !important;
         padding: 2rem;
         max-width: 100% !important;
     }
@@ -709,11 +741,6 @@ st.markdown("""
     div[class*="stDataFrame"] {
         background-color: transparent !important;
     }
-    
-    /* Ensure table elements are visible */
-    [data-testid="stDataFrame"] * {
-        z-index: auto !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -723,6 +750,10 @@ if st.session_state.high_contrast:
     <style>
         /* High Contrast Mode Overrides */
         .main {
+            background-color: #000000 !important;
+        }
+        
+        .block-container {
             background-color: #000000 !important;
         }
         
@@ -739,6 +770,10 @@ if st.session_state.high_contrast:
         }
         
         .stApp > header {
+            background-color: #000000 !important;
+        }
+        
+        [data-testid="stVerticalBlock"] {
             background-color: #000000 !important;
         }
         
@@ -1065,32 +1100,43 @@ def speak_text(text):
         try:
             from gtts import gTTS
             import base64
+            import hashlib
             
-            # Generate speech
-            tts = gTTS(text=text[:500], lang='en', slow=False)  # Limit to first 500 chars
+            # Create unique key for this text to avoid duplicate TTS
+            text_key = f"tts_{hashlib.md5(text[:100].encode()).hexdigest()}"
             
-            # Save to bytes
-            audio_buffer = BytesIO()
-            tts.write_to_fp(audio_buffer)
-            audio_buffer.seek(0)
-            
-            # Convert to base64 for HTML audio player
-            audio_base64 = base64.b64encode(audio_buffer.read()).decode()
-            
-            # Auto-play audio
-            st.markdown(f"""
-            <audio autoplay>
-                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-            </audio>
-            """, unsafe_allow_html=True)
+            # Only speak if we haven't already spoken this text
+            if text_key not in st.session_state:
+                st.session_state[text_key] = True
+                
+                # Generate speech
+                tts = gTTS(text=text[:500], lang='en', slow=False)  # Limit to first 500 chars
+                
+                # Save to bytes
+                audio_buffer = BytesIO()
+                tts.write_to_fp(audio_buffer)
+                audio_buffer.seek(0)
+                
+                # Convert to base64 for HTML audio player
+                audio_base64 = base64.b64encode(audio_buffer.read()).decode()
+                
+                # Auto-play audio with controls visible
+                st.markdown(f"""
+                <audio controls autoplay style="width: 100%; margin: 10px 0;">
+                    <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+                </audio>
+                """, unsafe_allow_html=True)
+                return True
         except Exception as e:
-            pass  # Silently fail if TTS not available
+            st.error(f"TTS Error: {str(e)}")
+            return False
+    return False
 
 # Header with Accessibility Controls
 st.markdown("""
-<div style='margin-bottom: 1rem;'>
-    <h1 style='margin: 0; color: #1565C0;'>LillyHelper</h1>
-    <span style='color: #424242; font-size: 1.2rem;'>AI Tool to Help Personalise/Visualise RWE</span>
+<div style='margin-bottom: 1.5rem;'>
+    <h1 style='margin: 0; color: #1565C0; font-size: 3.5rem; font-weight: 700;'>MedInsight</h1>
+    <span style='color: #424242; font-size: 1.4rem; font-weight: 400;'>AI Tool to Help Personalise/Visualise RWE</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1108,7 +1154,7 @@ with acc_col2:
         st.rerun()
 
 with acc_col3:
-    if st.button("TTS" if not st.session_state.tts_enabled else "✓ TTS", key="tts_btn", use_container_width=True):
+    if st.button("TTS" if not st.session_state.tts_enabled else "TTS ON", key="tts_btn", use_container_width=True):
         st.session_state.tts_enabled = not st.session_state.tts_enabled
         st.rerun()
 
@@ -1160,47 +1206,27 @@ def parse_json_to_dataframe(file):
         st.error(f"Error parsing JSON: {str(e)}")
         return pd.DataFrame()
 
-# Initialize session state
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
-if 'analysis_text' not in st.session_state:
-    st.session_state.analysis_text = ''
-if 'chatbot_messages' not in st.session_state:
-    st.session_state.chatbot_messages = []
+# Data Input Section
+st.markdown("#### Choose input method:")
+col1, col2 = st.columns(2)
 
-# Input method selection with inline CSS override
-st.markdown("""
-<style>
-    /* Force blue radio buttons for input method */
-    div[data-testid="stRadio"] input[type="radio"] {
-        accent-color: #2196F3 !important;
-    }
-    div[data-testid="stRadio"] input[type="radio"]:checked {
-        background-color: #2196F3 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+with col1:
+    if st.button("Upload File", use_container_width=True, type="primary" if st.session_state.input_method == "Upload File" else "secondary"):
+        st.session_state.input_method = "Upload File"
+        st.rerun()
 
-input_method = st.radio(
-    "Choose input method:",
-    ["Upload File", "Enter Text Directly"],
-    horizontal=True
-)
+with col2:
+    if st.button("Enter Text Directly", use_container_width=True, type="primary" if st.session_state.input_method == "Enter Text Directly" else "secondary"):
+        st.session_state.input_method = "Enter Text Directly"
+        st.rerun()
+
+input_method = st.session_state.input_method
 
 uploaded_file = None
 text_input = None
 file_type = None
 
 if input_method == "Upload File":
-    # Style selectbox with blue accent
-    st.markdown("""
-    <style>
-        div[data-testid="stSelectbox"] select {
-            accent-color: #2196F3 !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-    
     file_type = st.selectbox(
         "Select file type:",
         ["Data File (Excel/CSV)", "PDF Document", "PowerPoint Presentation", "Text Document", "JSON Data"]
@@ -1419,6 +1445,7 @@ if uploaded_file is not None or (text_input and text_input.strip()):
         
         # Display data preview
         st.markdown("### Data Preview")
+        st.markdown("**Quick overview of your data:** The metrics below show you the size and structure of your dataset. Click the expandable sections to explore the details.")
         
         if df is not None and not df.empty:
             col1, col2, col3 = st.columns(3)
@@ -1454,8 +1481,171 @@ if uploaded_file is not None or (text_input and text_input.strip()):
             with st.expander("View Content Preview", expanded=True):
                 st.markdown(extracted_text[:1000] + ("..." if len(extracted_text) > 1000 else ""))
         
+        st.markdown("---")
+        
+        # ============================================
+        # AI CHAT ASSISTANT - AVAILABLE AFTER DATA UPLOAD
+        # ============================================
+        st.markdown("### AI Chat Assistant")
+        st.markdown("**Ask questions about your data** - Get insights, clarification, and analysis help. The AI has context about your uploaded data.")
+
+        # Example question buttons
+        st.markdown("**Quick Start:**")
+        example_cols = st.columns(4)
+        
+        example_questions = [
+            "What are the key trends in this data?",
+            "Summarize the main findings",
+            "What patterns should I investigate?",
+            "Explain the data structure"
+        ]
+        
+        if 'example_question_clicked' not in st.session_state:
+            st.session_state.example_question_clicked = None
+        
+        for idx, col in enumerate(example_cols):
+            with col:
+                if st.button(example_questions[idx], key=f"example_q_{idx}", use_container_width=True):
+                    st.session_state.example_question_clicked = example_questions[idx]
+                    st.rerun()
+        
+        st.markdown("")
+
+        # Chat interface
+        chat_col1, chat_col2 = st.columns([4, 1])
+
+        with chat_col1:
+            general_prompt = st.chat_input("Ask AI anything about your data or analysis...")
+
+        with chat_col2:
+            if st.session_state.get('chatbot_messages', []):
+                if st.button("Clear Chat", type="secondary", use_container_width=True, key="clear_general_chat"):
+                    st.session_state.chatbot_messages = []
+                    st.rerun()
+
+        # Display chat messages
+        if st.session_state.get('chatbot_messages', []):
+            with st.container():
+                for message in st.session_state.chatbot_messages:
+                    with st.chat_message(message["role"]):
+                        st.markdown(message["content"], unsafe_allow_html=True)
+
+        # Handle new messages from general chat (including example questions)
+        active_prompt = general_prompt if general_prompt and general_prompt.strip() else st.session_state.example_question_clicked
+        
+        if active_prompt:
+            # Check if this message was already processed
+            if 'last_general_prompt' not in st.session_state or st.session_state.last_general_prompt != active_prompt:
+                st.session_state.last_general_prompt = active_prompt
+                st.session_state.example_question_clicked = None  # Reset example question
+                
+                # Add user message to chat history
+                st.session_state.chatbot_messages.append({"role": "user", "content": active_prompt})
+                
+                # Build context from analysis if available
+                context = ""
+                if 'analysis_text' in st.session_state and st.session_state.analysis_text:
+                    context += f"\n\nPrevious Analysis:\n{st.session_state.analysis_text[:1000]}"
+                
+                if 'df' in st.session_state and st.session_state.get('df') is not None:
+                    df_context = st.session_state['df']
+                    context += f"\n\nData Context:\n"
+                    context += f"- Total Rows: {len(df_context)}\n"
+                    context += f"- Total Columns: {len(df_context.columns)}\n"
+                    context += f"- Columns: {', '.join(df_context.columns.tolist()[:15])}\n\n"
+                    
+                    # Add statistical summary for numeric columns
+                    numeric_cols = df_context.select_dtypes(include=['number']).columns[:5]
+                    if len(numeric_cols) > 0:
+                        context += "Key Numeric Statistics:\n"
+                        for col in numeric_cols:
+                            context += f"  - {col}: mean={df_context[col].mean():.2f}, median={df_context[col].median():.2f}, std={df_context[col].std():.2f}\n"
+                    
+                    # Add value counts for categorical columns
+                    categorical_cols = df_context.select_dtypes(include=['object']).columns[:3]
+                    if len(categorical_cols) > 0:
+                        context += "\nKey Categorical Distributions:\n"
+                        for col in categorical_cols:
+                            top_values = df_context[col].value_counts().head(5).to_dict()
+                            context += f"  - {col}: {top_values}\n"
+                    
+                    # Add sample rows
+                    context += f"\nSample Data (first 3 rows):\n{df_context.head(3).to_string()}"
+                
+                # Create HCP-focused prompt with user profile
+                user_profile = st.session_state.get('user_profile', {})
+                knowledge = user_profile.get('knowledge_level', 'Intermediate')
+                language = user_profile.get('language', 'English')
+                hcp_role = user_profile.get('hcp_type', 'Healthcare Professional')
+                
+                full_prompt = f"""You are MedInsight, an AI assistant helping Healthcare Professionals (HCPs) analyze Real-World Evidence (RWE) data.
+
+User Profile:
+- Role: {hcp_role}
+- Knowledge Level: {knowledge}
+- Language: {language}
+
+User Question: {active_prompt}
+
+DATA AVAILABLE TO YOU:
+{context}
+
+INSTRUCTIONS:
+Answer the user's question based SPECIFICALLY on the data provided above. Use actual numbers, column names, and values from the dataset.
+- Reference specific findings from the data (e.g., "The average weight change was -11.3 kg in the Mounjaro group")
+- Cite actual statistics and distributions shown in the data
+- Focus on the treatments, outcomes, and patient characteristics present in THIS dataset
+- Tailor complexity to {knowledge} level
+- If the data doesn't contain information to answer the question, acknowledge this and suggest related insights from available data
+
+Keep your response concise (3-4 paragraphs max), clinically relevant, and evidence-based using the actual data provided.
+
+Response:"""
+                
+                # Generate AI response
+                try:
+                    with st.spinner("AI is thinking..."):
+                        response = generate_ai_response(full_prompt)
+                    
+                    # Add assistant response to chat history
+                    st.session_state.chatbot_messages.append({"role": "assistant", "content": response})
+                    
+                    # Auto-play TTS for chatbot response if enabled
+                    if st.session_state.tts_enabled:
+                        speak_text(response)
+                    
+                    # Rerun to display new messages
+                    st.rerun()
+                        
+                except Exception as e:
+                    st.error(f"Error generating response: {str(e)}")
+        
+        st.markdown("---")
+        
         # Generate summary with AI
         st.markdown("### AI Analysis")
+        
+        # Add explanation for non-technical users
+        with st.expander("What does AI Analysis do?", expanded=False):
+            st.markdown("""
+            **AI Analysis helps you understand your data without needing technical expertise.**
+            
+            **What it does:**
+            - Reads through your data or document automatically
+            - Identifies important patterns and trends
+            - Explains findings in plain language
+            - Provides practical recommendations
+            
+            **Why it's valuable:**
+            - Saves hours of manual data review
+            - Highlights insights you might miss
+            - Tailored to your expertise level
+            - Focuses on clinically relevant findings
+            
+            **How to use it:**
+            Simply click the button below and the AI will analyze your data and present the findings in an easy-to-understand format.
+            """)
+        
         if st.button("Ask AI to Analyze", type="primary", use_container_width=True):
             if not model:
                 st.error("⚠️ API key not configured. Please set GEMINI_API_KEY in .env file")
@@ -1469,13 +1659,20 @@ if uploaded_file is not None or (text_input and text_input.strip()):
                         language = user_profile.get('language', 'English')
                         hcp_role = user_profile.get('hcp_type', 'Healthcare Professional')
                         
+                        # Limit text content to prevent token overflow (max 3000 characters)
+                        max_chars = 3000
+                        truncated_text = extracted_text[:max_chars]
+                        if len(extracted_text) > max_chars:
+                            truncated_text += "...\n[Content truncated for analysis]"
+                        
                         data_summary = f"""
 Content Analysis:
 - Type: {file_type}
 - Length: {len(extracted_text)} characters
+- Analyzing: First {min(len(extracted_text), max_chars)} characters
 
-Full Content:
-{extracted_text}
+Content:
+{truncated_text}
 """
                         prompt = f"""You are analyzing this content for a {hcp_role} with {knowledge} knowledge level. 
 Language preference: {language} (adapt complexity and terminology accordingly).
@@ -1499,20 +1696,24 @@ Present the analysis in a clear, professional format that an HCP would find valu
                         language = user_profile.get('language', 'English')
                         hcp_role = user_profile.get('hcp_type', 'Healthcare Professional')
                         
+                        # Limit data to prevent token overflow
+                        sample_size = min(5, len(df))
+                        cols_to_show = min(10, len(df.columns))
+                        
                         data_summary = f"""
 Dataset Overview:
 - Total Rows: {len(df)}
 - Total Columns: {len(df.columns)}
-- Column Names: {', '.join(df.columns.tolist())}
+- Column Names: {', '.join(df.columns.tolist()[:cols_to_show])}{'...' if len(df.columns) > cols_to_show else ''}
 
-Data Types:
-{df.dtypes.to_string()}
+Data Types (first {cols_to_show} columns):
+{df.dtypes.head(cols_to_show).to_string()}
 
-Statistical Summary:
-{df.describe().to_string()}
+Statistical Summary (first {cols_to_show} numeric columns):
+{df.describe().iloc[:, :cols_to_show].to_string()}
 
-Sample Data:
-{df.head().to_string()}
+Sample Data (first {sample_size} rows, first {cols_to_show} columns):
+{df.head(sample_size).iloc[:, :cols_to_show].to_string()}
 """
                         prompt = f"""You are analyzing this Real-World Evidence (RWE) data for a {hcp_role} with {knowledge} knowledge level.
 Language preference: {language} (adapt complexity and terminology accordingly).
@@ -1542,21 +1743,171 @@ Present insights in a format that supports evidence-based clinical decision-maki
                         analysis_text = generate_ai_response(prompt)
                         st.session_state.analysis_text = analysis_text
                         
-                        st.markdown("#### AI Analysis Results")
+                        # Display results with clear user-friendly structure
+                        st.markdown("---")
+                        st.markdown("### Your Analysis Results")
                         
-                        # Add TTS button for analysis
-                        if st.session_state.tts_enabled:
-                            col_tts1, col_tts2 = st.columns([1, 5])
-                            with col_tts1:
-                                if st.button("🔊 Read Aloud", key="tts_analysis"):
-                                    speak_text(analysis_text)
+                        st.info("**Understanding Your Results**: The AI has reviewed your data and broken down the findings into clear sections below. Each section focuses on a specific aspect to help you make informed decisions.")
                         
+                        # Display the analysis in a well-structured format
                         st.markdown(analysis_text)
+                        
+                        # Add helpful context after analysis
+                        st.markdown("---")
+                        with st.expander("How to Use These Results", expanded=False):
+                            st.markdown("""
+                            **Making the Most of Your Analysis:**
+                            
+                            1. **Read the Clinical Summary first** - This gives you the big picture
+                            2. **Review Patient Impact** - See how findings affect care decisions
+                            3. **Check Actionable Insights** - Get specific recommendations you can implement
+                            4. **Use the buttons below** to:
+                               - Generate a professional summary for reports or presentations
+                               - Create visual charts and graphs to see patterns
+                               - Ask follow-up questions in the chatbot
+                            
+                            **Next Steps:**
+                            - Save or download the summary for your records
+                            - Share findings with your team
+                            - Use visualizations to present data to stakeholders
+                            """)
+                        
+                        # Auto-speak analysis if TTS is enabled
+                        if st.session_state.tts_enabled:
+                            speak_text(analysis_text)
                         
                         # Store analysis in session state for visualization
                         st.session_state['analysis_done'] = True
                         st.session_state['analysis_text'] = analysis_text
                         st.session_state['df'] = df
+                        
+                        # ============================================
+                        # CHAT INTERFACE - AFTER ANALYSIS
+                        # ============================================
+                        st.markdown("---")
+                        st.markdown("### Ask Follow-Up Questions")
+                        st.markdown("**Have questions about your analysis?** Chat with AI to dive deeper into specific findings or get clarification.")
+                        
+                        # Example question buttons for analysis follow-up
+                        st.markdown("**Quick Questions:**")
+                        followup_cols = st.columns(4)
+                        
+                        followup_questions = [
+                            "Explain the clinical significance",
+                            "What are the limitations?",
+                            "Compare to typical outcomes",
+                            "What should I investigate further?"
+                        ]
+                        
+                        if 'followup_question_clicked' not in st.session_state:
+                            st.session_state.followup_question_clicked = None
+                        
+                        for idx, col in enumerate(followup_cols):
+                            with col:
+                                if st.button(followup_questions[idx], key=f"followup_q_{idx}", use_container_width=True):
+                                    st.session_state.followup_question_clicked = followup_questions[idx]
+                                    st.rerun()
+                        
+                        st.markdown("")
+                        
+                        with st.expander("More ways to use the chat", expanded=False):
+                            st.markdown("""
+                            **Ask the AI follow-up questions about your analysis:**
+                            
+                            - Get clarification on specific findings
+                            - Request alternative interpretations
+                            - Ask for more detail on any section
+                            - Compare findings to other studies or standards
+                            
+                            **Example questions:**
+                            - "Can you explain the clinical significance of [finding] in more detail?"
+                            - "What are the limitations of this analysis?"
+                            - "How does this compare to typical outcomes?"
+                            - "What should I investigate further?"
+                            """)
+                        
+                        # Chat interface
+                        chat_col1, chat_col2 = st.columns([4, 1])
+                        
+                        with chat_col1:
+                            prompt = st.chat_input("Ask AI about your analysis...")
+                        
+                        with chat_col2:
+                            if st.session_state.get('chatbot_messages', []):
+                                if st.button("Clear Chat", type="secondary", use_container_width=True, key="clear_analysis_chat"):
+                                    st.session_state.chatbot_messages = []
+                                    st.rerun()
+                        
+                        # Display chat messages
+                        if st.session_state.get('chatbot_messages', []):
+                            chat_container = st.container()
+                            with chat_container:
+                                for message in st.session_state.chatbot_messages:
+                                    with st.chat_message(message["role"]):
+                                        st.markdown(message["content"], unsafe_allow_html=True)
+                        
+                        # Handle new messages (including example questions)
+                        active_followup = prompt if prompt and prompt.strip() else st.session_state.followup_question_clicked
+                        
+                        if active_followup:
+                            # Check if this message was already processed
+                            if 'last_prompt' not in st.session_state or st.session_state.last_prompt != active_followup:
+                                st.session_state.last_prompt = active_followup
+                                st.session_state.followup_question_clicked = None  # Reset example question
+                                
+                                # Add user message to chat history
+                                st.session_state.chatbot_messages.append({"role": "user", "content": active_followup})
+                                
+                                # Build context from analysis
+                                context = f"\n\nPrevious Analysis:\n{analysis_text[:1000]}"
+                                
+                                if df is not None:
+                                    context += f"\n\nData Context: {len(df)} rows, {len(df.columns)} columns"
+                                    context += f"\nColumns: {', '.join(df.columns.tolist()[:10])}"
+                                
+                                # Create HCP-focused prompt with user profile
+                                user_profile = st.session_state.get('user_profile', {})
+                                knowledge = user_profile.get('knowledge_level', 'Intermediate')
+                                language = user_profile.get('language', 'English')
+                                hcp_role = user_profile.get('hcp_type', 'Healthcare Professional')
+                                
+                                full_prompt = f"""You are MedInsight, an AI assistant helping Healthcare Professionals (HCPs) analyze Real-World Evidence (RWE) data.
+
+User Profile:
+- Role: {hcp_role}
+- Knowledge Level: {knowledge}
+- Language: {language}
+
+User Question: {active_followup}
+
+{context}
+
+Provide a helpful, professional response tailored for this {hcp_role} with {knowledge} knowledge level. 
+Adapt your response complexity and terminology to match their expertise. Focus on:
+- Clinical relevance and practical application for their specific role
+- Evidence-based insights at the appropriate technical level
+- Clear, actionable guidance
+- Terminology suitable for {knowledge} level
+
+Response:"""
+                                
+                                # Generate AI response
+                                try:
+                                    with st.spinner("AI is thinking..."):
+                                        response = generate_ai_response(full_prompt)
+                                    
+                                    # Add assistant response to chat history
+                                    st.session_state.chatbot_messages.append({"role": "assistant", "content": response})
+                                    
+                                    # Auto-play TTS for chatbot response if enabled
+                                    if st.session_state.tts_enabled:
+                                        speak_text(response)
+                                    
+                                    # Rerun to display new messages
+                                    st.rerun()
+                                        
+                                except Exception as e:
+                                    st.error(f"Error generating response: {str(e)}")
                         
                     except Exception as e:
                         st.error(f"Error generating analysis: {str(e)}")
@@ -1564,12 +1915,16 @@ Present insights in a format that supports evidence-based clinical decision-maki
         # Show visualization and professional summary buttons after analysis is done
         if st.session_state.get('analysis_done', False):
             st.markdown("---")
+            st.markdown("### Next Actions")
+            st.markdown("**Choose what you'd like to do with your analysis:**")
             
             # Professional Summary Generator
             col1, col2 = st.columns(2)
             
             with col1:
-                if st.button("📄 Generate Professional Summary", type="primary", use_container_width=True):
+                st.markdown("**Professional Summary**")
+                st.caption("Creates a formal report suitable for presentations, publications, or sharing with colleagues. Includes executive summary and structured findings.")
+                if st.button("Generate Professional Summary", type="primary", use_container_width=True):
                     with st.spinner("Creating professional summary..."):
                         # Build comprehensive context
                         summary_context = ""
@@ -1615,13 +1970,11 @@ Keep it professional, concise, and focused on actionable insights for HCPs."""
                             st.session_state['professional_summary'] = professional_summary
                             
                             st.markdown("### 📋 Professional Summary")
-                            
-                            # Add TTS button for summary
-                            if st.session_state.tts_enabled:
-                                if st.button("🔊 Read Summary Aloud", key="tts_summary"):
-                                    speak_text(professional_summary)
-                            
                             st.markdown(professional_summary)
+                            
+                            # Auto-speak summary if TTS is enabled
+                            if st.session_state.tts_enabled:
+                                speak_text(professional_summary)
                             
                             # Download option for summary
                             summary_report = f"""Professional RWE Analysis Summary
@@ -1633,7 +1986,7 @@ File: {uploaded_file.name if uploaded_file else 'Text Input'}
 {professional_summary}
 
 {'=' * 50}
-Powered by Lilly Cortex AI
+Powered by MedInsight AI
 """
                             st.download_button(
                                 label="⬇️ Download Summary (TXT)",
@@ -1656,14 +2009,35 @@ Powered by Lilly Cortex AI
             
             # Only show visualisation button if we have a dataframe
             if df is not None and not df.empty:
-                visualize_button = st.button("Generate Visualisations & 3D AR Graphs", use_container_width=True)
+                st.markdown("**Visual Insights**")
+                st.caption("Transforms your data into interactive charts and 3D graphs. Visual representations make it easier to spot trends, compare values, and present findings to others.")
+                visualize_button = st.button("Generate Visualizations & 3D AR Graphs", use_container_width=True)
                 if visualize_button:
                     # Show AI Analysis again
                     st.markdown("### AI Analysis")
                     st.markdown(st.session_state.get('analysis_text', ''))
                     st.markdown("---")
                     with st.spinner("Creating interactive visualisations..."):
-                        st.markdown("### Data Visualisations")
+                        st.markdown("### Data Visualizations")
+                        
+                        st.info("**Understanding Your Charts**: Each visualization below shows a different aspect of your data. You can interact with the charts - hover over points for details, zoom in/out, and rotate 3D graphs. These visuals help you see patterns that might not be obvious in raw numbers.")
+                        
+                        with st.expander("Chart Guide - What Each Visualization Shows", expanded=False):
+                            st.markdown("""
+                            **3D Scatter Plot**: Shows relationships between three variables at once. Each dot represents a data point, and colors group similar items together.
+                            
+                            **Distribution Charts**: Show how values are spread out - helping you see if data is clustered or evenly distributed.
+                            
+                            **Bar Charts**: Compare categories side-by-side to quickly see which groups have higher or lower values.
+                            
+                            **Correlation Matrix**: Shows how variables relate to each other. Blue colors indicate positive relationships, while lighter colors show little to no relationship.
+                            
+                            **How to use them:**
+                            - Hover your mouse over any element for detailed information
+                            - Click and drag to rotate 3D charts
+                            - Use the toolbar icons to zoom, pan, or download images
+                            - Take screenshots for reports or presentations
+                            """)
                         
                         # Get numeric and categorical columns
                         numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
@@ -1671,7 +2045,9 @@ Powered by Lilly Cortex AI
                     
                     if len(numeric_cols) >= 2:
                         # 3D Scatter Plot (AR-ready)
+                        st.markdown("---")
                         st.markdown("#### 3D Interactive Scatter Plot")
+                        st.markdown("**What this shows:** A three-dimensional view of your data where each point represents a record. This helps you see clusters, outliers, and relationships between multiple variables at once. Try rotating it with your mouse!")
                         
                         import plotly.graph_objects as go
                         
@@ -1686,7 +2062,7 @@ Powered by Lilly Cortex AI
                         if color_col:
                             # Create color mapping for categorical column
                             unique_categories = df[color_col].unique()
-                            colors = ['#E41E26' if i % 2 == 0 else '#4a4a4a' for i in range(len(unique_categories))]
+                            colors = ['#2196F3' if i % 2 == 0 else '#1565C0' for i in range(len(unique_categories))]
                             color_map = {cat: colors[i] for i, cat in enumerate(unique_categories)}
                             
                             fig = go.Figure(data=[go.Scatter3d(
@@ -1697,7 +2073,7 @@ Powered by Lilly Cortex AI
                                 marker=dict(
                                     size=6,
                                     color=[color_map[val] for val in df[color_col]],
-                                    line=dict(color='white', width=0.5)
+                                    line=dict(color='#1976D2', width=0.5)
                                 ),
                                 text=[f"{color_col}: {val}" for val in df[color_col]],
                                 hovertemplate=f'<b>%{{text}}</b><br>{x_col}: %{{x}}<br>{y_col}: %{{y}}<br>{z_col}: %{{z}}<extra></extra>'
@@ -1710,8 +2086,8 @@ Powered by Lilly Cortex AI
                                 mode='markers',
                                 marker=dict(
                                     size=6,
-                                    color='#E41E26',
-                                    line=dict(color='white', width=0.5)
+                                    color='#2196F3',
+                                    line=dict(color='#1976D2', width=0.5)
                                 ),
                                 hovertemplate=f'{x_col}: %{{x}}<br>{y_col}: %{{y}}<br>{z_col}: %{{z}}<extra></extra>'
                             )])
@@ -1719,15 +2095,15 @@ Powered by Lilly Cortex AI
                         fig.update_layout(
                             title=dict(
                                 text=f'3D Scatter: {x_col} vs {y_col} vs {z_col}',
-                                font=dict(color='#E41E26', size=18)
+                                font=dict(color='#1565C0', size=18)
                             ),
                             scene=dict(
-                                xaxis=dict(title=x_col, gridcolor='#3d3d3d', backgroundcolor='#1a1a1a'),
-                                yaxis=dict(title=y_col, gridcolor='#3d3d3d', backgroundcolor='#1a1a1a'),
-                                zaxis=dict(title=z_col, gridcolor='#3d3d3d', backgroundcolor='#1a1a1a'),
+                                xaxis=dict(title=x_col, gridcolor='#E3F2FD', backgroundcolor='#FFFFFF'),
+                                yaxis=dict(title=y_col, gridcolor='#E3F2FD', backgroundcolor='#FFFFFF'),
+                                zaxis=dict(title=z_col, gridcolor='#E3F2FD', backgroundcolor='#FFFFFF'),
                             ),
-                            paper_bgcolor='#1a1a1a',
-                            font=dict(color='#ffffff'),
+                            paper_bgcolor='#FFFFFF',
+                            font=dict(color='#212121'),
                             height=600
                         )
                         
@@ -1735,13 +2111,15 @@ Powered by Lilly Cortex AI
                     
                     # Distribution plots
                     if numeric_cols:
+                        st.markdown("---")
                         st.markdown("#### Distribution Analysis")
+                        st.markdown("**What this shows:** How your numeric values are spread out. Tall bars indicate common values, while short bars show rare values. This helps identify typical ranges and unusual data points.")
                         
                         for col in numeric_cols[:3]:  # Show first 3 numeric columns
                             fig = go.Figure(data=[go.Histogram(
                                 x=df[col],
-                                marker_color='#E41E26',
-                                marker_line_color='white',
+                                marker_color='#2196F3',
+                                marker_line_color='#1565C0',
                                 marker_line_width=1.5,
                                 opacity=0.85
                             )])
@@ -1749,13 +2127,13 @@ Powered by Lilly Cortex AI
                             fig.update_layout(
                                 title=dict(
                                     text=f'Distribution of {col}',
-                                    font=dict(color='#E41E26', size=16)
+                                    font=dict(color='#1565C0', size=16)
                                 ),
-                                xaxis=dict(title=col, gridcolor='#3d3d3d'),
-                                yaxis=dict(title='Frequency', gridcolor='#3d3d3d'),
-                                paper_bgcolor='#1a1a1a',
-                                plot_bgcolor='#1a1a1a',
-                                font=dict(color='#ffffff'),
+                                xaxis=dict(title=col, gridcolor='#E3F2FD'),
+                                yaxis=dict(title='Frequency', gridcolor='#E3F2FD'),
+                                paper_bgcolor='#FFFFFF',
+                                plot_bgcolor='#FFFFFF',
+                                font=dict(color='#212121'),
                                 showlegend=False,
                                 height=400
                             )
@@ -1764,7 +2142,9 @@ Powered by Lilly Cortex AI
                     
                     # Categorical distribution
                     if categorical_cols:
+                        st.markdown("---")
                         st.markdown("#### Categorical Distribution")
+                        st.markdown("**What this shows:** Comparison of different categories in your data. Longer bars indicate more frequent categories. This helps you see which groups are most common or rare.")
                         
                         for cat_col in categorical_cols[:3]:  # Show first 3 categorical columns
                             value_counts = df[cat_col].value_counts().head(10)
@@ -1773,21 +2153,21 @@ Powered by Lilly Cortex AI
                                 x=value_counts.values,
                                 y=value_counts.index,
                                 orientation='h',
-                                marker_color='#E41E26',
-                                marker_line_color='white',
+                                marker_color='#2196F3',
+                                marker_line_color='#1565C0',
                                 marker_line_width=1.5
                             )])
                             
                             fig.update_layout(
                                 title=dict(
                                     text=f'Top Values in {cat_col}',
-                                    font=dict(color='#E41E26', size=16)
+                                    font=dict(color='#1565C0', size=16)
                                 ),
-                                xaxis=dict(title='Count', gridcolor='#3d3d3d'),
-                                yaxis=dict(title=cat_col, gridcolor='#3d3d3d'),
-                                paper_bgcolor='#1a1a1a',
-                                plot_bgcolor='#1a1a1a',
-                                font=dict(color='#ffffff'),
+                                xaxis=dict(title='Count', gridcolor='#E3F2FD'),
+                                yaxis=dict(title=cat_col, gridcolor='#E3F2FD'),
+                                paper_bgcolor='#FFFFFF',
+                                plot_bgcolor='#FFFFFF',
+                                font=dict(color='#212121'),
                                 showlegend=False,
                                 height=400
                             )
@@ -1796,7 +2176,9 @@ Powered by Lilly Cortex AI
                     
                     # Correlation heatmap if multiple numeric columns
                     if len(numeric_cols) > 1:
+                        st.markdown("---")
                         st.markdown("#### Correlation Matrix")
+                        st.markdown("**What this shows:** How variables relate to each other. Darker blue means strong positive relationship (when one goes up, the other does too). White means no relationship. Numbers range from -1 to +1, with values closer to 1 or -1 indicating stronger relationships.")
                         
                         corr_matrix = df[numeric_cols].corr()
                         
@@ -1804,7 +2186,7 @@ Powered by Lilly Cortex AI
                             z=corr_matrix.values,
                             x=corr_matrix.columns,
                             y=corr_matrix.columns,
-                            colorscale=[[0, '#000000'], [0.5, '#ffffff'], [1, '#E41E26']],
+                            colorscale=[[0, '#E3F2FD'], [0.5, '#FFFFFF'], [1, '#2196F3']],
                             zmid=0,
                             text=corr_matrix.values.round(2),
                             texttemplate='%{text}',
@@ -1815,11 +2197,11 @@ Powered by Lilly Cortex AI
                         fig.update_layout(
                             title=dict(
                                 text='Feature Correlation Heatmap',
-                                font=dict(color='#E41E26', size=18)
+                                font=dict(color='#1565C0', size=18)
                             ),
-                            paper_bgcolor='#1a1a1a',
-                            plot_bgcolor='#1a1a1a',
-                            font=dict(color='#ffffff'),
+                            paper_bgcolor='#FFFFFF',
+                            plot_bgcolor='#FFFFFF',
+                            font=dict(color='#212121'),
                             height=600
                         )
                         
@@ -1847,9 +2229,9 @@ Powered by Lilly Cortex AI
                             mode='markers',
                             marker=dict(
                                 size=8,
-                                color=df[z_col] if z_col in df.columns else '#E41E26',
-                                colorscale=[[0, '#000000'], [0.5, '#4a4a4a'], [1, '#E41E26']],
-                                line=dict(color='white', width=1),
+                                color=df[z_col] if z_col in df.columns else '#2196F3',
+                                colorscale=[[0, '#E3F2FD'], [0.5, '#1976D2'], [1, '#1565C0']],
+                                line=dict(color='#1976D2', width=1),
                                 showscale=True
                             ),
                             hovertemplate=f'{x_col}: %{{x}}<br>{y_col}: %{{y}}<br>{z_col}: %{{z}}<extra></extra>'
@@ -1858,18 +2240,18 @@ Powered by Lilly Cortex AI
                         fig.update_layout(
                             title=dict(
                                 text=f'AR-Ready 3D Visualisation',
-                                font=dict(color='#E41E26', size=20)
+                                font=dict(color='#1565C0', size=20)
                             ),
                             scene=dict(
-                                xaxis=dict(title=x_col, backgroundcolor='#1a1a1a', gridcolor='#3d3d3d'),
-                                yaxis=dict(title=y_col, backgroundcolor='#1a1a1a', gridcolor='#3d3d3d'),
-                                zaxis=dict(title=z_col, backgroundcolor='#1a1a1a', gridcolor='#3d3d3d'),
+                                xaxis=dict(title=x_col, backgroundcolor='#FFFFFF', gridcolor='#E3F2FD'),
+                                yaxis=dict(title=y_col, backgroundcolor='#FFFFFF', gridcolor='#E3F2FD'),
+                                zaxis=dict(title=z_col, backgroundcolor='#FFFFFF', gridcolor='#E3F2FD'),
                                 camera=dict(
                                     eye=dict(x=1.5, y=1.5, z=1.5)
                                 )
                             ),
-                            paper_bgcolor='#1a1a1a',
-                            font=dict(color='#ffffff'),
+                            paper_bgcolor='#FFFFFF',
+                            font=dict(color='#212121'),
                             height=700
                         )
                         
@@ -1923,7 +2305,7 @@ Powered by Lilly Cortex AI
             # Download analysis report
             if 'analysis_text' in st.session_state:
                 file_name = uploaded_file.name if uploaded_file else "Text Input"
-                report = f"""LillyHelper - Analysis Report
+                report = f"""MedInsight - Analysis Report
 =====================================
 
 File: {file_name}
@@ -1981,151 +2363,32 @@ else:
 
 # Footer
 st.markdown("---")
-st.markdown("*Powered by Lilly AI*")
+st.markdown("*Powered by MedInsight AI*")
 
-# LillyHelper Chatbot - Sidebar
+# Sidebar - Quick Navigation
 with st.sidebar:
-    st.markdown("### LillyHelper Assistant")
-    st.markdown("Ask AI about your Real-World Evidence data, clinical insights, or analysis questions.")
-    st.markdown("---")
+    st.markdown("### Quick Navigation")
+    st.markdown("Jump to different sections:")
     
-    # Custom CSS for chat input styling
+    if st.button("Chat (Top)", use_container_width=True):
+        st.markdown('<a href="#ai-chat-assistant"></a>', unsafe_allow_html=True)
+    
+    if st.button("Upload Data", use_container_width=True):
+        st.markdown('<a href="#choose-input-method"></a>', unsafe_allow_html=True)
+    
+    if st.button("AI Analysis", use_container_width=True):
+        st.markdown('<a href="#ai-analysis"></a>', unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.markdown("### Tips")
     st.markdown("""
-    <style>
-        /* Custom text input styling for chat */
-        div[data-testid="stTextInput"] input {
-            background-color: #F5F5F5 !important;
-            border: 2px solid #2196F3 !important;
-            border-radius: 25px !important;
-            color: #212121 !important;
-            padding: 12px 15px !important;
-        }
-        div[data-testid="stTextInput"] input:focus {
-            border: 2px solid #1976D2 !important;
-            box-shadow: 0 0 0 1px #1976D2 !important;
-            outline: none !important;
-        }
-        div[data-testid="stTextInput"] input::placeholder {
-            color: #757575 !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+    **Getting Started:**
+    1. Use the chat above to ask questions
+    2. Upload your data for analysis
+    3. Get AI insights and visualizations
     
-    # Initialize voice input state
-    if 'voice_input_active' not in st.session_state:
-        st.session_state.voice_input_active = False
-    
-    # Voice input button
-    if st.button("Use Voice Input", key="voice_btn", help="Click to speak your question", use_container_width=True):
-        st.session_state.voice_input_active = not st.session_state.voice_input_active
-        
-        voice_input_html = """
-        <script>
-            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.lang = 'en-US';
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-            
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                window.parent.postMessage({type: 'voice_input', text: transcript}, '*');
-            };
-            
-            recognition.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
-            };
-            
-            recognition.start();
-        </script>
-        """
-        st.components.v1.html(voice_input_html, height=0)
-    
-    # Text input
-    prompt = st.text_input(
-        "Message",
-        placeholder="Ask AI anything...",
-        key="chat_text_input",
-        label_visibility="collapsed"
-    )
-    
-    # Clear chat button
-    if st.session_state.chatbot_messages:
-        if st.button("Clear Chat History", type="secondary", use_container_width=True, key="clear_chat"):
-            st.session_state.chatbot_messages = []
-            st.rerun()
-    
-    st.markdown("---")
-    
-    # Chat container with scrolling
-    chat_container = st.container(height=350)
-    
-    with chat_container:
-        # Display chat history
-        for message in st.session_state.chatbot_messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"], unsafe_allow_html=True)
-    
-    # Handle message sending
-    if prompt and prompt.strip():
-        # Check if this message was already processed
-        if 'last_prompt' not in st.session_state or st.session_state.last_prompt != prompt:
-            st.session_state.last_prompt = prompt
-            
-            # Add user message to chat history
-            st.session_state.chatbot_messages.append({"role": "user", "content": prompt})
-            
-            # Build context from analysis if available
-            context = ""
-            if 'analysis_text' in st.session_state and st.session_state.analysis_text:
-                context += f"\n\nPrevious Analysis:\n{st.session_state.analysis_text[:1000]}"
-            
-            if 'df' in st.session_state and st.session_state.get('df') is not None:
-                df = st.session_state['df']
-                context += f"\n\nData Context: {len(df)} rows, {len(df.columns)} columns"
-                context += f"\nColumns: {', '.join(df.columns.tolist()[:10])}"
-            
-            # Create HCP-focused prompt with user profile
-            user_profile = st.session_state.get('user_profile', {})
-            knowledge = user_profile.get('knowledge_level', 'Intermediate')
-            language = user_profile.get('language', 'English')
-            hcp_role = user_profile.get('hcp_type', 'Healthcare Professional')
-            
-            full_prompt = f"""You are LillyHelper, an AI assistant helping Healthcare Professionals (HCPs) analyze Real-World Evidence (RWE) data.
-
-User Profile:
-- Role: {hcp_role}
-- Knowledge Level: {knowledge}
-- Language: {language}
-
-User Question: {prompt}
-
-{context}
-
-Provide a helpful, professional response tailored for this {hcp_role} with {knowledge} knowledge level. 
-Adapt your response complexity and terminology to match their expertise. Focus on:
-- Clinical relevance and practical application for their specific role
-- Evidence-based insights at the appropriate technical level
-- Clear, actionable guidance
-- Terminology suitable for {knowledge} level
-
-Response:"""
-            
-            # Generate AI response
-            try:
-                with st.spinner("Thinking..."):
-                    response = generate_ai_response(full_prompt)
-                
-                # Add assistant response to chat history
-                st.session_state.chatbot_messages.append({"role": "assistant", "content": response})
-                
-                # Auto-play TTS for chatbot response if enabled
-                if st.session_state.tts_enabled:
-                    speak_text(response)
-                    
-            except Exception as e:
-                st.error(f"Error generating response: {str(e)}")
-                # Remove the user message if response failed
-                if st.session_state.chatbot_messages and st.session_state.chatbot_messages[-1]["role"] == "user":
-                    st.session_state.chatbot_messages.pop()
-            
-            st.rerun()
+    **Best Practices:**
+    - Start with the chat for quick questions
+    - Upload data for detailed analysis
+    - Use TTS for hands-free listening
+    """)

@@ -1,0 +1,221 @@
+/* Clean Blue Professional Theme for MedInsight */
+
+/* Main app background - Clean White */
+.main {
+    background-color: #FFFFFF !important;
+    padding: 2rem;
+}
+
+/* Content container */
+.block-container {
+    background-color: #FFFFFF !important;
+    padding: 2rem !important;
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+}
+
+/* Sidebar - White background for readability */
+[data-testid="stSidebar"] {
+    background-color: #F5F7FA !important;
+    border-right: 2px solid #2196F3 !important;
+}
+
+/* App background */
+.stApp {
+    background-color: #F5F7FA !important;
+}
+
+/* Hide deploy button */
+[data-testid="stToolbar"] button[kind="header"] {
+    display: none !important;
+}
+
+/* Headers - Consistent Blue */
+h1 {
+    color: #1565C0 !important;
+    font-weight: 700 !important;
+    font-size: 2.5rem !important;
+    margin-bottom: 1rem !important;
+}
+
+h2 {
+    color: #1976D2 !important;
+    font-weight: 600 !important;
+    font-size: 1.8rem !important;
+}
+
+h3 {
+    color: #1976D2 !important;
+    font-weight: 500 !important;
+    font-size: 1.3rem !important;
+}
+
+h4 {
+    color: #2196F3 !important;
+    font-weight: 500 !important;
+}
+
+/* All text - Consistent dark gray */
+body, p, span, div, label, .stMarkdown {
+    color: #212121 !important;
+}
+
+/* Buttons - Clean Blue */
+button[kind="primary"],
+.stButton button {
+    background-color: #2196F3 !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.6rem 1.5rem !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: background-color 0.2s ease !important;
+}
+
+button[kind="primary"]:hover,
+.stButton button:hover {
+    background-color: #1976D2 !important;
+}
+
+button[kind="secondary"] {
+    background-color: white !important;
+    color: #2196F3 !important;
+    border: 2px solid #2196F3 !important;
+    padding: 0.6rem 1.5rem !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+
+button[kind="secondary"]:hover {
+    background-color: #E3F2FD !important;
+}
+
+/* Radio buttons */
+[data-testid="stRadio"] label {
+    color: #212121 !important;
+}
+
+[data-testid="stRadio"] input[type="radio"] {
+    accent-color: #2196F3 !important;
+}
+
+/* File uploader */
+[data-testid="stFileUploader"] {
+    background-color: #FAFAFA !important;
+    border: 2px dashed #2196F3 !important;
+    border-radius: 8px !important;
+    padding: 2rem !important;
+}
+
+[data-testid="stFileUploader"] label {
+    color: #212121 !important;
+}
+
+/* Dataframe */
+[data-testid="stDataFrame"] {
+    background-color: white !important;
+    border-radius: 8px !important;
+    border: 1px solid #E0E0E0 !important;
+}
+
+[data-testid="stDataFrame"] thead tr th {
+    background-color: #2196F3 !important;
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+/* Metrics */
+[data-testid="stMetric"] {
+    background-color: #F5F7FA !important;
+    padding: 1.2rem !important;
+    border-radius: 8px !important;
+    border-left: 4px solid #2196F3 !important;
+}
+
+[data-testid="stMetricValue"] {
+    color: #1565C0 !important;
+    font-weight: 700 !important;
+    font-size: 2rem !important;
+}
+
+[data-testid="stMetricLabel"] {
+    color: #616161 !important;
+    font-weight: 500 !important;
+}
+
+/* Text inputs */
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea {
+    background-color: white !important;
+    color: #212121 !important;
+    border: 2px solid #E0E0E0 !important;
+    border-radius: 8px !important;
+    padding: 0.6rem !important;
+}
+
+[data-testid="stTextInput"] input:focus,
+[data-testid="stTextArea"] textarea:focus {
+    border-color: #2196F3 !important;
+    outline: none !important;
+}
+
+/* Selectbox */
+[data-testid="stSelectbox"] {
+    background-color: white !important;
+}
+
+[data-testid="stSelectbox"] label {
+    color: #212121 !important;
+}
+
+/* Sidebar headings - Larger and black */
+[data-testid="stSidebar"] h1 {
+    color: #000000 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+}
+
+[data-testid="stSidebar"] h2 {
+    color: #000000 !important;
+    font-size: 1.5rem !important;
+    font-weight: 600 !important;
+}
+
+[data-testid="stSidebar"] h3 {
+    color: #000000 !important;
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
+}
+
+/* Sidebar text - Larger and black */
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] div,
+[data-testid="stSidebar"] label {
+    color: #000000 !important;
+    font-size: 1.1rem !important;
+}
+
+/* Chat messages in sidebar */
+[data-testid="stSidebar"] [data-testid="stChatMessage"] {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-radius: 8px !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stChatMessage"] * {
+    color: #000000 !important;
+    font-size: 1.1rem !important;
+}
+
+/* Chat input in sidebar */
+[data-testid="stSidebar"] [data-testid="stChatInput"] input {
+    background-color: white !important;
+    color: #000000 !important;
+    border: 2px solid #E0E0E0 !important;
+    font-size: 1.1rem !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stChatInput"] input::placeholder {
+    color: #616161 !important;
+    font-size: 1.1rem !important;
+}
