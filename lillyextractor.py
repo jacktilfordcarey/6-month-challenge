@@ -42,7 +42,7 @@ load_dotenv()
 
 # Configure page
 st.set_page_config(
-    page_title="MedInsight",
+    page_title="BRIDGE",
     page_icon="🔬",
     layout="wide"
 )
@@ -1135,7 +1135,7 @@ def speak_text(text):
 # Header with Accessibility Controls
 st.markdown("""
 <div style='margin-bottom: 1.5rem;'>
-    <h1 style='margin: 0; color: #1565C0; font-size: 3.5rem; font-weight: 700;'>MedInsight</h1>
+    <h1 style='margin: 0; color: #1565C0; font-size: 3.5rem; font-weight: 700;'>BRIDGE</h1>
     <span style='color: #424242; font-size: 1.4rem; font-weight: 400;'>AI Tool to Help Personalise/Visualise RWE</span>
 </div>
 """, unsafe_allow_html=True)
@@ -1547,6 +1547,7 @@ if uploaded_file is not None or (text_input and text_input.strip()):
                 if 'analysis_text' in st.session_state and st.session_state.analysis_text:
                     context += f"\n\nPrevious Analysis:\n{st.session_state.analysis_text[:1000]}"
                 
+                # Check for dataframe data
                 if 'df' in st.session_state and st.session_state.get('df') is not None:
                     df_context = st.session_state['df']
                     context += f"\n\nData Context:\n"
@@ -1571,6 +1572,15 @@ if uploaded_file is not None or (text_input and text_input.strip()):
                     
                     # Add sample rows
                     context += f"\nSample Data (first 3 rows):\n{df_context.head(3).to_string()}"
+                
+                # Check for text/document data
+                elif extracted_text:
+                    context += f"\n\nDocument Content ({len(extracted_text)} characters):\n"
+                    # Include substantial portion of text (up to 4000 chars for better context)
+                    max_text_chars = 4000
+                    context += extracted_text[:max_text_chars]
+                    if len(extracted_text) > max_text_chars:
+                        context += "\n...[Content truncated]"
                 
                 # Create HCP-focused prompt with user profile
                 user_profile = st.session_state.get('user_profile', {})
@@ -1871,7 +1881,7 @@ Present insights in a format that supports evidence-based clinical decision-maki
                                 language = user_profile.get('language', 'English')
                                 hcp_role = user_profile.get('hcp_type', 'Healthcare Professional')
                                 
-                                full_prompt = f"""You are MedInsight, an AI assistant helping Healthcare Professionals (HCPs) analyze Real-World Evidence (RWE) data.
+                                full_prompt = f"""You are BRIDGE, an AI assistant helping Healthcare Professionals (HCPs) analyze Real-World Evidence (RWE) data.
 
 User Profile:
 - Role: {hcp_role}
@@ -1986,7 +1996,7 @@ File: {uploaded_file.name if uploaded_file else 'Text Input'}
 {professional_summary}
 
 {'=' * 50}
-Powered by MedInsight AI
+Powered by BRIDGE AI
 """
                             st.download_button(
                                 label="⬇️ Download Summary (TXT)",
@@ -2305,7 +2315,7 @@ Powered by MedInsight AI
             # Download analysis report
             if 'analysis_text' in st.session_state:
                 file_name = uploaded_file.name if uploaded_file else "Text Input"
-                report = f"""MedInsight - Analysis Report
+                report = f"""BRIDGE - Analysis Report
 =====================================
 
 File: {file_name}
@@ -2363,7 +2373,7 @@ else:
 
 # Footer
 st.markdown("---")
-st.markdown("*Powered by MedInsight AI*")
+st.markdown("*Powered by BRIDGE AI*")
 
 # Sidebar - Quick Navigation
 with st.sidebar:
